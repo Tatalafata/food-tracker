@@ -14,16 +14,13 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import RecipeDetail from '@/components/RecipeDetail';
+import { isRecipe, Recipe } from '@/lib/recipes.mjs';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 
-interface Recipe {
-  name: string;
-  description: string;
-  ingredients: string[];
-}
 
 type RecipeMode = 'quick' | 'custom';
 
@@ -34,11 +31,11 @@ async function fetchRecipes(prompt: string): Promise<Recipe[]> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!response.ok) throw new Error(response.status === 402 ? 'credits' : response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : 'network');
   const data = await response.json();
-  if (!Array.isArray(data.recipes) || data.recipes.some((r: Recipe) => typeof r.name !== 'string' || typeof r.description !== 'string' || !Array.isArray(r.ingredients))) throw new Error('network');
+  if (!Array.isArray(data.recipes) || !data.recipes.every(isRecipe)) throw new Error('network');
   return data.recipes;
 }
 
@@ -97,9 +94,9 @@ function DietaryToggles({
   );
 }
 
-function RecipeCard({ recipe, index, keyIngredientsLabel }: { recipe: Recipe; index: number; keyIngredientsLabel: string }) {
+function RecipeCard({ recipe, index, keyIngredientsLabel, onPress }: { recipe: Recipe; index: number; keyIngredientsLabel: string; onPress: () => void }) {
   return (
-    <View style={styles.recipeCard}>
+    <TouchableOpacity style={styles.recipeCard} onPress={onPress} accessibilityRole="button" accessibilityLabel={recipe.name} activeOpacity={0.8}>
       <View style={styles.recipeHeader}>
         <View style={styles.recipeNumber}>
           <Text style={styles.recipeNumberText}>{index + 1}</Text>
@@ -111,11 +108,11 @@ function RecipeCard({ recipe, index, keyIngredientsLabel }: { recipe: Recipe; in
       <View style={styles.ingredientsList}>
         {recipe.ingredients.map((ing, i) => (
           <View key={i} style={styles.ingredientChip}>
-            <Text style={styles.ingredientText}>{ing}</Text>
+            <Text style={styles.ingredientText}>{ing.name}</Text>
           </View>
         ))}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -125,6 +122,7 @@ export default function RecipesScreen() {
 
   const [mode, setMode] = useState<RecipeMode>('quick');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | 'credits' | null>(null);
@@ -253,14 +251,7 @@ ${pantryList}
 ${buildDietLine()}
 Suggest exactly 2 recipes that use these ingredients, prioritising items that expire soonest.
 
-Return ONLY a JSON array with no extra text, in this exact format:
-[
-  {
-    "name": "Recipe Name",
-    "description": "One or two sentence description of the dish.",
-    "ingredients": ["ingredient1", "ingredient2", "ingredient3"]
-  }
-]`;
+Return complete recipes for one person with quantified ingredients and ordered preparation steps, matching the required JSON schema.`;
     } else {
       const selectedPantryItems = sortedItems.filter((i) => selectedIds.has(i.id));
       const allIngredients = [
@@ -294,14 +285,7 @@ ${buildDietLine()}${notesLine}
 
 Suggest exactly 2 recipes that make good use of these ingredients.
 
-Return ONLY a JSON array with no extra text, in this exact format:
-[
-  {
-    "name": "Recipe Name",
-    "description": "One or two sentence description of the dish.",
-    "ingredients": ["ingredient1", "ingredient2", "ingredient3"]
-  }
-]`;
+Return complete recipes for one person with quantified ingredients and ordered preparation steps, matching the required JSON schema.`;
     }
 
     setLoading(true);
@@ -511,7 +495,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
           )}
 
           {!loading && recipes.map((recipe, idx) => (
-            <RecipeCard key={idx} recipe={recipe} index={idx} keyIngredientsLabel={t.recipesKeyIngredients} />
+            <RecipeCard key={idx} recipe={recipe} index={idx} keyIngredientsLabel={t.recipeOpen} onPress={() => setSelectedRecipe(recipe)} />
           ))}
 
           {!fetched && !loading && (
@@ -524,6 +508,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+      {selectedRecipe && <RecipeDetail recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
     </SafeAreaView>
   );
 }

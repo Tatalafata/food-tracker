@@ -25,6 +25,15 @@ export interface Translations {
   recipesNetworkError: string;
   recipesLimit: string;
   recipesCredits: string;
+  recipeOpen: string;
+  recipeClose: string;
+  recipeIngredients: string;
+  recipePreparation: string;
+  recipeMore: string;
+  recipeFewer: string;
+  recipeToTaste: string;
+  recipeScalingHint: string;
+  recipeServings: (n: number) => string;
   // Home
   homeSubtitle: (n: number) => string;
   homeExpired: string;
@@ -174,6 +183,15 @@ export interface Translations {
 }
 
 const en: Translations = {
+  recipeOpen: "Open full recipe",
+  recipeClose: "Close recipe",
+  recipeIngredients: "Ingredients",
+  recipePreparation: "Preparation",
+  recipeMore: "More servings",
+  recipeFewer: "Fewer servings",
+  recipeToTaste: "to taste",
+  recipeScalingHint: "Quantities adjust to the servings. Check cooking times and doneness when preparing larger batches.",
+  recipeServings: (n) => `${n} ${n === 1 ? 'person' : 'people'}`,
   recipesCredits: 'OpenAI API credit is exhausted. Add credit to your OpenAI API account to generate recipes.',
   recipesLimit: 'Too many requests. Wait 30 seconds; the local limit is 20 requests per day.',
   dateYear: 'Year', dateMonth: 'Month', dateDay: 'Day',
@@ -282,6 +300,15 @@ const en: Translations = {
 };
 
 const it: Translations = {
+  recipeOpen: "Apri la ricetta completa",
+  recipeClose: "Chiudi ricetta",
+  recipeIngredients: "Ingredienti",
+  recipePreparation: "Preparazione",
+  recipeMore: "Aumenta porzioni",
+  recipeFewer: "Diminuisci porzioni",
+  recipeToTaste: "q.b.",
+  recipeScalingHint: "Le quantità si adattano alle porzioni. Per dosi maggiori controlla i tempi di cottura e la cottura effettiva.",
+  recipeServings: (n) => `${n} ${n === 1 ? 'persona' : 'persone'}`,
   recipesCredits: 'Il credito API OpenAI è esaurito. Ricarica il tuo account API OpenAI per generare le ricette.',
   recipesLimit: 'Troppe richieste. Attendi 30 secondi; il limite locale è 20 richieste al giorno.',
   dateYear: 'Anno', dateMonth: 'Mese', dateDay: 'Giorno',
@@ -391,6 +418,15 @@ const it: Translations = {
 };
 
 const fr: Translations = {
+  recipeOpen: "Ouvrir la recette complète",
+  recipeClose: "Fermer la recette",
+  recipeIngredients: "Ingrédients",
+  recipePreparation: "Préparation",
+  recipeMore: "Plus de portions",
+  recipeFewer: "Moins de portions",
+  recipeToTaste: "au goût",
+  recipeScalingHint: "Les quantités suivent les portions. Pour des quantités plus grandes, vérifiez le temps de cuisson et la cuisson.",
+  recipeServings: (n) => `${n} ${n === 1 ? 'personne' : 'personnes'}`,
   recipesCredits: 'Le crédit API OpenAI est épuisé. Rechargez votre compte API OpenAI pour générer des recettes.',
   recipesLimit: 'Trop de demandes. Attendez 30 secondes ; la limite locale est de 20 demandes par jour.',
   dateYear: 'Année', dateMonth: 'Mois', dateDay: 'Jour',
@@ -502,6 +538,15 @@ const fr: Translations = {
 };
 
 const de: Translations = {
+  recipeOpen: "Vollständiges Rezept öffnen",
+  recipeClose: "Rezept schließen",
+  recipeIngredients: "Zutaten",
+  recipePreparation: "Zubereitung",
+  recipeMore: "Mehr Portionen",
+  recipeFewer: "Weniger Portionen",
+  recipeToTaste: "nach Geschmack",
+  recipeScalingHint: "Die Mengen passen sich den Portionen an. Bei größeren Mengen Garzeiten und Garzustand prüfen.",
+  recipeServings: (n) => `${n} ${n === 1 ? 'Person' : 'Personen'}`,
   recipesCredits: 'Das OpenAI-API-Guthaben ist aufgebraucht. Laden Sie Ihr OpenAI-API-Konto auf, um Rezepte zu generieren.',
   recipesLimit: 'Zu viele Anfragen. Bitte 30 Sekunden warten; das lokale Limit beträgt 20 Anfragen pro Tag.',
   dateYear: 'Jahr', dateMonth: 'Monat', dateDay: 'Tag',

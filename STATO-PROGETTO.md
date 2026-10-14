@@ -50,11 +50,19 @@ Aggiornato il 14 ottobre 2026. Questo file permette alle nuove chat di riprender
 - Chiave inserita dal proprietario e caricata nel servizio. Primo tentativo bloccato per credito esaurito; dopo la ricarica, prova reale riuscita: due suggerimenti in italiano ricevuti tramite il servizio locale con pasta, pomodori, olio e ceci. I suggerimenti erano molto simili: qualita e varieta richiedono altre valutazioni; non considerare questa prova una validazione delle restrizioni alimentari. Aggiunto messaggio dedicato al credito esaurito nelle quattro lingue. Il server deve partire fuori dal sandbox per raggiungere OpenAI su questo PC (altrimenti EACCES).
 
 - Ricette migrate al servizio locale `server/recipes.mjs` con GPT-4.1 nano. Chiave privata `OPENAI_API_KEY` in `.env`, nessuna chiave nel client. Avvio con `npm run api`; guida in `OPENAI-SETUP.md`.
-- Due ricette, massimo 800 token in uscita, cache giornaliera, 20 tentativi/giorno e intervallo 30 secondi. Limiti in memoria, azzerati al riavvio: non costituiscono un limite di spesa persistente.
+- Due ricette complete, massimo 2.200 token in uscita, cache giornaliera, 20 tentativi/giorno e intervallo 30 secondi. Limiti in memoria, azzerati al riavvio: non costituiscono un limite di spesa persistente.
 - Il server ascolta solo su loopback. Per telefoni e distribuzione resta necessario un backend HTTPS autenticato con limiti persistenti. Configurazione client tramite `EXPO_PUBLIC_RECIPES_API_URL`.
 - Test automatici con risposte simulate superati; collegamento reale OpenAI verificato dopo la ricarica. Il servizio rimane attivo sul PC. Qualita delle ricette ancora da valutare con altri ingredienti e preferenze.
 - `npm run check` e `npm run test:api` superati. In anteprima verificata la chiamata al servizio e il messaggio senza chiave. Creato `.env` locale con soli segnaposto, escluso da Git; servizio locale avviato senza credenziali.
 
 ## Prossima richiesta
 
-Nessuna nuova funzionalita di prodotto concordata. Aprire l'anteprima e seguire la richiesta della product manager, con priorita all'uso sul cellulare.
+### Ricette complete e porzioni
+
+- Proposte toccabili: aprono una finestra con ingredienti quantificati per una persona e preparazione numerata. Pulsanti +/meno da 1 a 12 persone; dosi calcolate sul dispositivo senza ulteriori chiamate OpenAI. Le dosi citate nei passaggi usano riferimenti agli ingredienti e si aggiornano; temperature e tempi restano invariati.
+- Formato OpenAI aggiornato con ingredienti strutturati e passaggi, validazione condivisa fra server e client. Il server richiede quantita numeriche anche per condimenti. Modello GPT-4.1 nano conservato; limite risposta portato da 800 a 2.200 token. Stima aggiornata in OPENAI-SETUP.md.
+- Controlli TypeScript/lint e quattro test automatici superati, inclusi moltiplicazione, frazioni, limiti porzioni e rifiuto di ricette incomplete/riferimenti non validi. Export Android/iOS riuscito. Prove native sul telefono ancora necessarie.
+- Anteprima Expo riavviata fuori dal sandbox dopo un errore di rete all'avvio. Server locale OpenAI riavviato con il nuovo schema; chiave privata mai esposta.
+- Prova reale nel browser: ricette con salmone, spinaci, olio e patate; apertura/chiusura, ritorno a una porzione alla riapertura, moltiplicazione 1/2 persone e blocco ai limiti 1/12 verificati. Dati della dispensa conservati. I riferimenti alle dosi ripartiscono proporzionalmente l'ingrediente se il modello assegna quote complessive superiori al totale; controllata la pulizia delle unita duplicate. Qualita culinaria ancora da valutare; nessun test su telefoni reali.
+
+Ricette complete con porzioni concordate e implementate. Seguire le prossime richieste della product manager, con priorita all'uso sul cellulare.
