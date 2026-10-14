@@ -1,163 +1,113 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import React, { useMemo } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppColors } from '@/constants/theme';
+import ExpiryBadge from '@/components/ExpiryBadge';
+import ScreenHeader from '@/components/ScreenHeader';
+import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
-import { getDaysUntilExpiry, getExpiryStatus, usePantry } from '@/store/pantry';
+import { getDaysUntilExpiry, PantryItem, usePantry } from '@/store/pantry';
 
 export default function PantryScreen() {
   const { items, removeItem, loading } = usePantry();
   const { t } = useI18n();
+  const [pendingDelete, setPendingDelete] = useState<PantryItem | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState(false);
+  const sorted = useMemo(() => [...items].sort((a, b) => getDaysUntilExpiry(a.expiryDate) - getDaysUntilExpiry(b.expiryDate)), [items]);
 
-  const sorted = useMemo(
-    () =>
-      [...items].sort((a, b) => {
-        const dA = a.expiryDate ? getDaysUntilExpiry(a.expiryDate) : Infinity;
-        const dB = b.expiryDate ? getDaysUntilExpiry(b.expiryDate) : Infinity;
-        return dA - dB;
-      }),
-    [items],
-  );
-
-  function confirmDelete(id: string, name: string) {
-    Alert.alert(t.pantryRemoveTitle, t.pantryRemoveConfirm(name), [
-      { text: t.cancel, style: 'cancel' },
-      { text: t.pantryRemove, style: 'destructive', onPress: () => removeItem(id) },
-    ]);
+  async function confirmDelete() {
+    if (!pendingDelete || removing) return;
+    setRemoving(true);
+    setRemoveError(false);
+    try {
+      await removeItem(pendingDelete.id);
+      setPendingDelete(null);
+    } catch {
+      setRemoveError(true);
+    } finally {
+      setRemoving(false);
+    }
   }
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color={AppColors.primary} />
-      </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.center}><ActivityIndicator size="large" color={AppColors.primaryDark} /></SafeAreaView>;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>{t.pantryTitle}</Text>
-          <Text style={styles.subtitle}>{t.pantrySubtitle(items.length)}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => router.push('/add-product' as never)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.addBtnText}>+</Text>
+    <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
+      <ScreenHeader title={t.pantryTitle} subtitle={t.pantrySubtitle(items.length)} action={
+        <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/add-product')} accessibilityRole="button" accessibilityLabel={t.addProductTitle}>
+          <Ionicons name="add" size={25} color={AppColors.onPrimary} />
         </TouchableOpacity>
-      </View>
-
-      {sorted.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🛒</Text>
-          <Text style={styles.emptyTitle}>{t.pantryEmptyTitle}</Text>
-          <Text style={styles.emptyText}>{t.pantryEmptyText}</Text>
+      } />
+      <FlatList
+        data={sorted}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <View style={styles.emptyMark}><Ionicons name="basket-outline" size={32} color={AppColors.primaryDark} /></View>
+            <Text style={styles.emptyTitle}>{t.pantryEmptyTitle}</Text>
+            <Text style={styles.emptyText}>{t.pantryEmptyText}</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={styles.cardBody}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              {item.expiryDate && <Text style={styles.itemDate}>{t.pantryBestBefore} {item.expiryDate}</Text>}
+              <View style={styles.badgeSpace}><ExpiryBadge expiryDate={item.expiryDate} /></View>
+            </View>
+            <TouchableOpacity style={AppStyles.iconButton} onPress={() => { setRemoveError(false); setPendingDelete(item); }} accessibilityRole="button" accessibilityLabel={t.pantryRemove + ': ' + item.name}>
+              <Ionicons name="trash-outline" size={19} color={AppColors.textLight} />
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+      <Modal visible={!!pendingDelete} transparent animationType="fade" onRequestClose={() => !removing && setPendingDelete(null)}>
+        <View style={styles.modalOverlay}>
+          <View accessibilityViewIsModal style={styles.modalCard}>
+            <Text accessibilityRole="header" style={styles.modalTitle}>{t.pantryRemoveTitle}</Text>
+            <Text style={styles.modalText}>{t.pantryRemoveConfirm(pendingDelete?.name ?? '')}</Text>
+            {removeError && <Text accessibilityRole="alert" style={styles.error}>{t.saveError}</Text>}
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setPendingDelete(null)} disabled={removing} accessibilityRole="button"><Text style={styles.cancelText}>{t.cancel}</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.removeBtn} onPress={confirmDelete} disabled={removing} accessibilityRole="button">
+                {removing ? <ActivityIndicator color={AppColors.expired} /> : <Text style={styles.removeText}>{t.pantryRemove}</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      ) : (
-        <FlatList
-          data={sorted}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const hasExpiry = !!item.expiryDate;
-            const status = getExpiryStatus(item.expiryDate);
-            const isNone = status === 'none';
-
-            const color =
-              isNone ? AppColors.textLight
-              : status === 'expired' ? AppColors.expired
-              : status === 'warning' ? AppColors.warning
-              : AppColors.good;
-
-            const bg =
-              isNone ? AppColors.border
-              : status === 'expired' ? AppColors.expiredBg
-              : status === 'warning' ? AppColors.warningBg
-              : AppColors.goodBg;
-
-            let daysLabel = t.noExpiryDate;
-            if (hasExpiry) {
-              const days = getDaysUntilExpiry(item.expiryDate!);
-              daysLabel =
-                days < 0 ? t.labelExpiredAgo(Math.abs(days))
-                : days === 0 ? t.labelExpiresToday
-                : days === 1 ? t.labelTomorrow
-                : t.labelDaysLeft(days);
-            }
-
-            return (
-              <View style={[styles.card, { borderLeftColor: color }]}>
-                <View style={[styles.dot, { backgroundColor: color }]} />
-                <View style={styles.cardBody}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDate}>
-                    {hasExpiry ? `${t.pantryBestBefore} ${item.expiryDate}` : t.noExpiryDate}
-                  </Text>
-                </View>
-                <View style={styles.cardRight}>
-                  <View style={[styles.statusBadge, { backgroundColor: bg }]}>
-                    <Text style={[styles.statusText, { color }]}>{daysLabel}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => confirmDelete(item.id, item.name)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={styles.deleteIcon}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          }}
-        />
-      )}
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: AppColors.background },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, backgroundColor: AppColors.primary,
-  },
-  title: { fontSize: 24, fontWeight: '700', color: AppColors.white },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  addBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  addBtnText: { fontSize: 24, color: AppColors.white, lineHeight: 28 },
-  list: { padding: 16, paddingBottom: 32 },
-  card: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: AppColors.white,
-    borderRadius: 12, padding: 14, marginBottom: 10, borderLeftWidth: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
-  cardBody: { flex: 1 },
-  itemName: { fontSize: 15, fontWeight: '600', color: AppColors.text },
-  itemDate: { fontSize: 12, color: AppColors.textLight, marginTop: 2 },
-  cardRight: { alignItems: 'flex-end', gap: 8 },
-  statusBadge: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  deleteBtn: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#F5F5F5', justifyContent: 'center', alignItems: 'center' },
-  deleteIcon: { fontSize: 11, color: '#999' },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyIcon: { fontSize: 52 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: AppColors.text, marginTop: 16 },
-  emptyText: { fontSize: 14, color: AppColors.textLight, marginTop: 6, textAlign: 'center' },
+  center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center' },
+  addBtn: { ...AppStyles.iconButton, backgroundColor: AppColors.primary },
+  list: { paddingHorizontal: 24, paddingBottom: 28, flexGrow: 1 },
+  card: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 18, marginBottom: 12 },
+  cardBody: { flex: 1, minWidth: 0 },
+  itemName: { fontSize: 16, lineHeight: 23, fontWeight: '600', color: AppColors.text },
+  itemDate: { fontSize: 12, lineHeight: 18, color: AppColors.textLight, marginTop: 4 },
+  badgeSpace: { marginTop: 12 },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
+  emptyMark: { width: 80, height: 80, borderRadius: 28, backgroundColor: AppColors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { fontSize: 21, fontWeight: '600', color: AppColors.text, marginTop: 20, textAlign: 'center' },
+  emptyText: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, marginTop: 8, textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(29,44,34,0.28)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalCard: { ...AppStyles.card, width: '100%', maxWidth: 420, padding: 24 },
+  modalTitle: { fontSize: 22, fontWeight: '600', color: AppColors.text },
+  modalText: { fontSize: 15, lineHeight: 23, color: AppColors.textLight, marginTop: 12 },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 24 },
+  cancelBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.surfaceTint },
+  cancelText: { ...AppStyles.buttonText },
+  removeBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.expiredBg },
+  removeText: { ...AppStyles.buttonText, color: AppColors.expired },
+  error: { color: AppColors.expired, fontSize: 14, lineHeight: 20, marginTop: 12 },
 });

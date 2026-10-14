@@ -1,11 +1,12 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -15,7 +16,9 @@ import {
   View,
 } from 'react-native';
 
-import { AppColors } from '@/constants/theme';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { usePantry } from '@/store/pantry';
 
@@ -34,11 +37,13 @@ function daysInMonth(year: number, month: number): number {
 }
 
 function WheelColumn({
+  label,
   data,
   selectedIndex,
   onSelect,
   formatItem,
 }: {
+  label: string;
   data: number[];
   selectedIndex: number;
   onSelect: (index: number) => void;
@@ -62,37 +67,41 @@ function WheelColumn({
 
   return (
     <View style={styles.wheelCol}>
-      {/* Selection highlight */}
-      <View pointerEvents="none" style={styles.wheelHighlight} />
-      <FlatList
-        ref={ref}
-        data={data}
-        keyExtractor={(item) => String(item)}
-        snapToInterval={ITEM_H}
-        decelerationRate="fast"
-        showsVerticalScrollIndicator={false}
-        getItemLayout={(_, index) => ({ length: ITEM_H, offset: index * ITEM_H, index })}
-        contentContainerStyle={{ paddingVertical: PAD }}
-        onMomentumScrollEnd={handleScrollEnd}
-        onScrollEndDrag={handleScrollEnd}
-        renderItem={({ item, index }) => {
-          const dist = Math.abs(index - selectedIndex);
-          const opacity = dist === 0 ? 1 : dist === 1 ? 0.6 : 0.25;
-          const isSelected = index === selectedIndex;
-          return (
-            <View style={styles.wheelItem}>
-              <Text
-                style={[
-                  styles.wheelText,
-                  isSelected && styles.wheelTextSelected,
-                  { opacity },
-                ]}>
-                {formatItem(item)}
-              </Text>
-            </View>
-          );
-        }}
-      />
+      <Text style={styles.wheelLabel}>{label}</Text>
+      <View style={styles.wheelTrack}>
+        {/* Selection highlight */}
+        <View pointerEvents="none" style={styles.wheelHighlight} />
+        <FlatList
+          ref={ref}
+          data={data}
+          initialScrollIndex={selectedIndex}
+          keyExtractor={(item) => String(item)}
+          snapToInterval={ITEM_H}
+          decelerationRate="fast"
+          showsVerticalScrollIndicator={false}
+          getItemLayout={(_, index) => ({ length: ITEM_H, offset: index * ITEM_H, index })}
+          contentContainerStyle={{ paddingVertical: PAD }}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollEndDrag={handleScrollEnd}
+          renderItem={({ item, index }) => {
+            const dist = Math.abs(index - selectedIndex);
+            const opacity = dist === 0 ? 1 : dist === 1 ? 0.6 : 0.25;
+            const isSelected = index === selectedIndex;
+            return (
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={label + ': ' + formatItem(item)} accessibilityState={{ selected: isSelected }} aria-selected={isSelected} style={styles.wheelItem} onPress={() => onSelect(index)}>
+                <Text
+                  style={[
+                    styles.wheelText,
+                    isSelected && styles.wheelTextSelected,
+                    { opacity },
+                  ]}>
+                  {formatItem(item)}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </View>
     </View>
   );
 }
@@ -112,7 +121,10 @@ function DatePickerModal({
   confirmLabel: string;
   cancelLabel: string;
 }) {
+  const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const now = new Date();
+  const firstYear = now.getFullYear();
   const years = range(now.getFullYear(), now.getFullYear() + 15);
   const months = range(1, 12);
 
@@ -128,29 +140,39 @@ function DatePickerModal({
   const days = range(1, maxDay);
   const clampedDayIdx = Math.min(dayIdx, maxDay - 1);
 
+  useEffect(() => {
+    if (!visible) return;
+    setYearIdx(Math.max(0, initialDate.getFullYear() - firstYear));
+    setMonthIdx(initialDate.getMonth());
+    setDayIdx(initialDate.getDate() - 1);
+  }, [visible, initialDate, firstYear]);
+
   const handleConfirm = () => {
     onConfirm(new Date(selectedYear, selectedMonth - 1, days[clampedDayIdx] ?? 1));
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={onDismiss} />
       <View style={styles.pickerContainer}>
-        <View style={styles.pickerSheet}>
+        <View style={[styles.pickerSheet, { paddingBottom: Math.max(insets.bottom, 20) }]}>
           <View style={styles.wheelsRow}>
             <WheelColumn
+              label={t.dateYear}
               data={years}
               selectedIndex={yearIdx}
               onSelect={setYearIdx}
               formatItem={(v) => String(v)}
             />
             <WheelColumn
+              label={t.dateMonth}
               data={months}
               selectedIndex={monthIdx}
               onSelect={setMonthIdx}
               formatItem={(v) => String(v).padStart(2, '0')}
             />
             <WheelColumn
+              label={t.dateDay}
               data={days}
               selectedIndex={clampedDayIdx}
               onSelect={setDayIdx}
@@ -158,10 +180,10 @@ function DatePickerModal({
             />
           </View>
           <View style={styles.pickerActions}>
-            <TouchableOpacity style={styles.pickerCancelBtn} onPress={onDismiss}>
+            <TouchableOpacity accessibilityRole="button" style={styles.pickerCancelBtn} onPress={onDismiss}>
               <Text style={styles.pickerCancelText}>{cancelLabel}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.pickerConfirmBtn} onPress={handleConfirm}>
+            <TouchableOpacity accessibilityRole="button" style={styles.pickerConfirmBtn} onPress={handleConfirm}>
               <Text style={styles.pickerConfirmText}>{confirmLabel}</Text>
             </TouchableOpacity>
           </View>
@@ -187,19 +209,23 @@ export default function AddProductScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [savedName, setSavedName] = useState('');
+  const [saveError, setSaveError] = useState(false);
 
-  const formattedDate = selectedDate.toISOString().split('T')[0];
+  const formattedDate = [selectedDate.getFullYear(), String(selectedDate.getMonth() + 1).padStart(2, '0'), String(selectedDate.getDate()).padStart(2, '0')].join('-');
 
   async function handleAdd() {
-    if (!name.trim()) {
+    if (!name.trim() || saving) {
       return;
     }
+    setSaveError(false);
     setSaving(true);
     try {
       await addItem({
         name: name.trim(),
         expiryDate: noExpiry ? undefined : formattedDate,
       });
+      setSavedName(name.trim());
       setSuccess(true);
       setName('');
       setNoExpiry(false);
@@ -207,6 +233,8 @@ export default function AddProductScreen() {
         setSuccess(false);
         router.back();
       }, 1200);
+    } catch {
+      setSaveError(true);
     } finally {
       setSaving(false);
     }
@@ -218,25 +246,26 @@ export default function AddProductScreen() {
         <View style={styles.successCircle}>
           <Text style={styles.successCheck}>✓</Text>
         </View>
-        <Text style={styles.successTitle}>{t.addProductSuccess(name || '…')}</Text>
+        <Text style={styles.successTitle}>{t.addProductSuccess(savedName)}</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={AppStyles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.closeText}>✕</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t.cancel} onPress={() => router.back()} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="close" size={22} color={AppColors.textLight} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t.addProductTitle}</Text>
-        <View style={styles.closeBtn} />
+        <View style={styles.headerSpacer} />
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>{t.addProductNameLabel}</Text>
           <TextInput
+            accessibilityLabel={t.addProductNameLabel}
             style={styles.input}
             value={name}
             onChangeText={setName}
@@ -250,13 +279,14 @@ export default function AddProductScreen() {
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
               <Text style={styles.toggleLabel}>{t.addProductNoExpiry}</Text>
-              <Text style={styles.toggleSubtitle}>e.g. Salt, Spices, Honey</Text>
+              <Text style={styles.toggleSubtitle}>{t.addProductNoExpiryHint}</Text>
             </View>
             <Switch
+              accessibilityLabel={t.addProductNoExpiry}
               value={noExpiry}
               onValueChange={setNoExpiry}
-              trackColor={{ false: AppColors.border, true: AppColors.primaryLight }}
-              thumbColor={noExpiry ? AppColors.primary : '#f4f3f4'}
+              trackColor={{ false: AppColors.border, true: AppColors.accent }}
+              thumbColor={AppColors.white}
             />
           </View>
 
@@ -265,20 +295,24 @@ export default function AddProductScreen() {
               <Text style={styles.label}>{t.addProductExpiryLabel}</Text>
               <TouchableOpacity
                 style={styles.datePicker}
+                accessibilityRole="button"
+                accessibilityLabel={t.addProductPickDate + ': ' + formattedDate}
                 onPress={() => setPickerVisible(true)}
                 activeOpacity={0.7}>
                 <Text style={styles.datePickerText}>{formattedDate}</Text>
-                <Text style={styles.datePickerIcon}>📅</Text>
+                <Ionicons name="calendar-outline" size={21} color={AppColors.primaryDark} />
               </TouchableOpacity>
             </>
           )}
 
+          {saveError && <Text accessibilityRole="alert" style={styles.error}>{t.saveError}</Text>}
           <TouchableOpacity
+            accessibilityRole="button"
             style={[styles.addBtn, (!name.trim() || saving) && styles.addBtnDisabled]}
             onPress={handleAdd}
             activeOpacity={0.8}
             disabled={!name.trim() || saving}>
-            <Text style={styles.addBtnText}>{t.addProductAddBtn}</Text>
+            {saving ? <ActivityIndicator color={AppColors.onPrimary} /> : <Text style={styles.addBtnText}>{t.addProductAddBtn}</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -299,88 +333,41 @@ export default function AddProductScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: AppColors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: AppColors.primary,
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  closeBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  closeText: { fontSize: 16, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
-  form: { padding: 24, gap: 4 },
-  label: { fontSize: 13, fontWeight: '600', color: AppColors.textLight, marginTop: 20, marginBottom: 8 },
-  input: {
-    borderWidth: 1.5, borderColor: AppColors.border, borderRadius: 12,
-    padding: 14, fontSize: 16, color: AppColors.text, backgroundColor: AppColors.white,
-  },
-  toggleRow: {
-    flexDirection: 'row', alignItems: 'center', marginTop: 20,
-    backgroundColor: AppColors.white, borderRadius: 12, padding: 16,
-    borderWidth: 1.5, borderColor: AppColors.border,
-  },
+  center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 18, paddingBottom: 12 },
+  headerTitle: { flex: 1, fontSize: 20, fontWeight: '600', letterSpacing: -0.4, color: AppColors.text, textAlign: 'center', marginHorizontal: 8 },
+  closeBtn: { ...AppStyles.iconButton },
+  headerSpacer: { width: 48, height: 48 },
+  form: { padding: 24, paddingTop: 0, paddingBottom: 40, gap: 4 },
+  label: { fontSize: 14, fontWeight: '500', color: AppColors.text, marginTop: 24, marginBottom: 10 },
+  input: { ...AppStyles.input },
+  toggleRow: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', marginTop: 24, padding: 20, gap: 12 },
   toggleInfo: { flex: 1 },
-  toggleLabel: { fontSize: 15, fontWeight: '600', color: AppColors.text },
-  toggleSubtitle: { fontSize: 12, color: AppColors.textLight, marginTop: 2 },
-  datePicker: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderWidth: 1.5, borderColor: AppColors.border, borderRadius: 12,
-    padding: 14, backgroundColor: AppColors.white,
-  },
-  datePickerText: { fontSize: 16, color: AppColors.text, fontWeight: '500' },
-  datePickerIcon: { fontSize: 20 },
-  addBtn: {
-    backgroundColor: AppColors.primary, borderRadius: 14,
-    paddingVertical: 16, alignItems: 'center', marginTop: 32,
-  },
-  addBtnDisabled: { backgroundColor: AppColors.textLight },
-  addBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  successCircle: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: AppColors.goodBg, justifyContent: 'center', alignItems: 'center', marginBottom: 16,
-  },
-  successCheck: { fontSize: 36, color: AppColors.good },
-  successTitle: { fontSize: 18, fontWeight: '700', color: AppColors.text },
-  // Wheel picker
-  pickerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  pickerContainer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-  },
-  wheelsRow: {
-    flexDirection: 'row', height: ITEM_H * VISIBLE,
-    paddingHorizontal: 16, marginTop: 8,
-  },
-  wheelCol: { flex: 1, overflow: 'hidden', position: 'relative' },
-  wheelHighlight: {
-    position: 'absolute', left: 4, right: 4,
-    top: ITEM_H * Math.floor(VISIBLE / 2),
-    height: ITEM_H,
-    borderTopWidth: 1.5, borderBottomWidth: 1.5, borderColor: AppColors.primary,
-    borderRadius: 4,
-  },
+  toggleLabel: { fontSize: 15, lineHeight: 22, fontWeight: '500', color: AppColors.text },
+  toggleSubtitle: { fontSize: 13, lineHeight: 19, color: AppColors.textLight, marginTop: 6 },
+  datePicker: { ...AppStyles.input, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  datePickerText: { fontSize: 16, color: AppColors.text, fontWeight: '400' },
+  addBtn: { ...AppStyles.button, marginTop: 32 },
+  addBtnDisabled: { opacity: 0.5 },
+  addBtnText: { ...AppStyles.buttonText },
+  error: { fontSize: 14, lineHeight: 21, color: AppColors.expired, marginTop: 20 },
+  successCircle: { width: 96, height: 96, borderRadius: 32, backgroundColor: AppColors.goodBg, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  successCheck: { fontSize: 40, color: AppColors.good },
+  successTitle: { fontSize: 22, fontWeight: '600', color: AppColors.text, textAlign: 'center' },
+  pickerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(29,44,34,0.28)' },
+  pickerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, justifyContent: 'flex-end' },
+  pickerSheet: { backgroundColor: AppColors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', maxWidth: 640, alignSelf: 'center', paddingTop: 12 },
+  wheelsRow: { flexDirection: 'row', height: ITEM_H * VISIBLE + 32, paddingHorizontal: 24, marginTop: 8 },
+  wheelCol: { flex: 1 },
+  wheelLabel: { fontSize: 13, lineHeight: 20, color: AppColors.textLight, textAlign: 'center', marginBottom: 12 },
+  wheelTrack: { flex: 1, overflow: 'hidden', position: 'relative' },
+  wheelHighlight: { position: 'absolute', left: 4, right: 4, top: ITEM_H * Math.floor(VISIBLE / 2), height: ITEM_H, backgroundColor: AppColors.surfaceTint, borderRadius: 14 },
   wheelItem: { height: ITEM_H, justifyContent: 'center', alignItems: 'center' },
   wheelText: { fontSize: 20, color: AppColors.textLight, fontWeight: '400' },
-  wheelTextSelected: { color: AppColors.text, fontWeight: '700', fontSize: 22 },
-  pickerActions: {
-    flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4,
-  },
-  pickerCancelBtn: {
-    flex: 1, borderRadius: 12, paddingVertical: 14,
-    borderWidth: 1.5, borderColor: AppColors.border, alignItems: 'center',
-  },
-  pickerCancelText: { fontSize: 15, color: AppColors.textLight, fontWeight: '600' },
-  pickerConfirmBtn: {
-    flex: 1, borderRadius: 12, paddingVertical: 14,
-    backgroundColor: AppColors.primary, alignItems: 'center',
-  },
-  pickerConfirmText: { fontSize: 15, color: '#fff', fontWeight: '700' },
+  wheelTextSelected: { color: AppColors.primaryDark, fontWeight: '600', fontSize: 22 },
+  pickerActions: { flexDirection: 'row', gap: 12, paddingHorizontal: 24, paddingTop: 16 },
+  pickerCancelBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.surfaceTint },
+  pickerCancelText: { ...AppStyles.buttonText },
+  pickerConfirmBtn: { ...AppStyles.button, flex: 1 },
+  pickerConfirmText: { ...AppStyles.buttonText },
 });

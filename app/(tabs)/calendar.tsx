@@ -1,15 +1,48 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { Calendar, DateData } from 'react-native-calendars';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Calendar, DateData, LocaleConfig } from 'react-native-calendars';
 
-import { AppColors } from '@/constants/theme';
-import { useI18n } from '@/store/i18n';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import ScreenHeader from '@/components/ScreenHeader';
+import { AppColors, AppStyles } from '@/constants/theme';
+import { LANGUAGE_OPTIONS, useI18n } from '@/store/i18n';
 import { getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
+
+LANGUAGE_OPTIONS.forEach(({ code }) => {
+  const months = Array.from({ length: 12 }, (_, month) => new Date(2024, month, 1));
+  const days = Array.from({ length: 7 }, (_, day) => new Date(2024, 0, 7 + day));
+  LocaleConfig.locales[code] = {
+    monthNames: months.map((date) => new Intl.DateTimeFormat(code, { month: 'long' }).format(date)),
+    monthNamesShort: months.map((date) => new Intl.DateTimeFormat(code, { month: 'short' }).format(date)),
+    dayNames: days.map((date) => new Intl.DateTimeFormat(code, { weekday: 'long' }).format(date)),
+    dayNamesShort: days.map((date) => new Intl.DateTimeFormat(code, { weekday: 'short' }).format(date)),
+    today: { en: 'Today', it: 'Oggi', fr: 'Aujourd’hui', de: 'Heute' }[code],
+  };
+});
+
+const calendarTheme = {
+  calendarBackground: AppColors.white, textSectionTitleColor: AppColors.textLight,
+  selectedDayBackgroundColor: AppColors.primary, selectedDayTextColor: AppColors.onPrimary,
+  todayTextColor: AppColors.primaryDark, dayTextColor: AppColors.text, textDisabledColor: '#ADB6AA',
+  dotColor: AppColors.warning, selectedDotColor: AppColors.onPrimary, arrowColor: AppColors.primaryDark,
+  monthTextColor: AppColors.primaryDark, textDayFontWeight: '500' as const,
+  textMonthFontWeight: '600' as const, textDayHeaderFontWeight: '400' as const,
+  arrowStyle: { minWidth: 48, minHeight: 48, alignItems: 'center' as const, justifyContent: 'center' as const },
+  weekVerticalMargin: 2,
+  'stylesheet.calendar.main': { dayContainer: { flex: 1, alignItems: 'stretch' } },
+  'stylesheet.day.basic': {
+    base: { width: '100%', height: 48, alignItems: 'center', justifyContent: 'center' },
+    selected: { backgroundColor: AppColors.primary, borderRadius: 14 },
+  },
+};
 
 export default function CalendarScreen() {
   const { items } = usePantry();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
+  LocaleConfig.defaultLocale = language;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [visibleMonth, setVisibleMonth] = useState<string | undefined>(undefined);
 
   const { markedDates, itemsByDate } = useMemo(() => {
     const itemsByDate: Record<string, PantryItem[]> = {};
@@ -41,25 +74,17 @@ export default function CalendarScreen() {
   const selectedItems = selectedDate ? (itemsByDate[selectedDate] ?? []) : [];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t.calendarTitle}</Text>
-        <Text style={styles.subtitle}>{t.calendarSubtitle}</Text>
-      </View>
+    <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
+      <ScreenHeader title={t.calendarTitle} subtitle={t.calendarSubtitle} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
       <Calendar
+        key={language}
+        current={visibleMonth}
+        onMonthChange={(month: DateData) => setVisibleMonth(month.dateString)}
         onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
         markedDates={markedDates}
-        theme={{
-          backgroundColor: AppColors.background, calendarBackground: AppColors.white,
-          textSectionTitleColor: AppColors.primary, selectedDayBackgroundColor: AppColors.primary,
-          selectedDayTextColor: AppColors.white, todayTextColor: AppColors.primaryLight,
-          dayTextColor: AppColors.text, textDisabledColor: '#ccc',
-          dotColor: AppColors.warning, selectedDotColor: AppColors.white,
-          arrowColor: AppColors.primary, monthTextColor: AppColors.primaryDark,
-          indicatorColor: AppColors.primary, textDayFontWeight: '500',
-          textMonthFontWeight: '700', textDayHeaderFontWeight: '600',
-        }}
+        theme={calendarTheme}
         style={styles.calendar}
       />
 
@@ -76,23 +101,20 @@ export default function CalendarScreen() {
               ? t.calendarDayItems(selectedDate, selectedItems.length)
               : t.calendarDayEmpty(selectedDate)}
           </Text>
-          <FlatList
-            data={selectedItems}
-            keyExtractor={(i) => i.id}
-            renderItem={({ item }) => {
+          {selectedItems.map((item) => {
               const status = getExpiryStatus(item.expiryDate);
               const color = status === 'expired' ? AppColors.expired : status === 'warning' ? AppColors.warning : AppColors.good;
               return (
-                <View style={styles.dayItem}>
+                <View key={item.id} style={styles.dayItem}>
                   <View style={[styles.dayDot, { backgroundColor: color }]} />
                   <Text style={styles.dayItemName}>{item.name}</Text>
                 </View>
               );
-            }}
-            ListEmptyComponent={<Text style={styles.noneText}>{t.calendarNothingOnDay}</Text>}
-          />
+            })}
+          {selectedItems.length === 0 && <Text style={styles.noneText}>{t.calendarNothingOnDay}</Text>}
         </View>
       )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -107,19 +129,16 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.background },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, backgroundColor: AppColors.primary },
-  title: { fontSize: 24, fontWeight: '700', color: AppColors.white },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  calendar: { marginHorizontal: 12, marginTop: 12, borderRadius: 12, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
-  legend: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 12, marginBottom: 4 },
+  content: { paddingHorizontal: 24, paddingBottom: 28 },
+  calendar: { ...AppStyles.card, padding: 10, overflow: 'hidden' },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 18, rowGap: 10, marginVertical: 20 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendDot: { width: 6, height: 6, borderRadius: 3 },
   legendLabel: { fontSize: 12, color: AppColors.textLight },
-  dayPanel: { flex: 1, margin: 12, backgroundColor: AppColors.white, borderRadius: 12, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
-  dayTitle: { fontSize: 14, fontWeight: '700', color: AppColors.text, marginBottom: 12 },
-  dayItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  dayDot: { width: 8, height: 8, borderRadius: 4 },
-  dayItemName: { fontSize: 15, color: AppColors.text },
-  noneText: { fontSize: 14, color: AppColors.textLight, textAlign: 'center', marginTop: 8 },
+  dayPanel: { ...AppStyles.card, marginTop: 4, padding: 20 },
+  dayTitle: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: AppColors.text, marginBottom: 12 },
+  dayItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  dayDot: { width: 6, height: 6, borderRadius: 3 },
+  dayItemName: { flex: 1, fontSize: 15, lineHeight: 22, color: AppColors.text },
+  noneText: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, paddingVertical: 8 },
 });

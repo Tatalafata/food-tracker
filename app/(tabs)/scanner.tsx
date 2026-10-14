@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
@@ -6,7 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +16,10 @@ import {
   View,
 } from 'react-native';
 
-import { AppColors } from '@/constants/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import ScreenHeader from '@/components/ScreenHeader';
+import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { usePantry } from '@/store/pantry';
 
@@ -105,19 +109,29 @@ export default function ScannerScreen() {
   if (!permission) {
     return (
       <SafeAreaView style={styles.center}>
-        <ActivityIndicator color={AppColors.primary} />
+        <ActivityIndicator color={AppColors.primaryDark} />
       </SafeAreaView>
     );
   }
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={styles.center}>
-        <Text style={styles.permTitle}>{t.scannerCameraTitle}</Text>
-        <Text style={styles.permText}>{t.scannerCameraText}</Text>
-        <TouchableOpacity style={styles.btn} onPress={requestPermission}>
-          <Text style={styles.btnText}>{t.scannerGrantAccess}</Text>
-        </TouchableOpacity>
+      <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
+        <ScreenHeader title={t.scannerTitle} subtitle={t.scannerSubtitle} />
+        <ScrollView contentContainerStyle={styles.permissionContent}>
+          <View style={styles.permissionCard}>
+            <View style={styles.cameraMark}><Ionicons name="scan-outline" size={34} color={AppColors.primaryDark} /></View>
+            <Text style={styles.permTitle}>{t.scannerCameraTitle}</Text>
+            <Text style={styles.permText}>{t.scannerCameraText}</Text>
+            <TouchableOpacity style={styles.btn} accessibilityRole="button" onPress={permission.canAskAgain || Platform.OS === 'web' ? requestPermission : () => Linking.openSettings()}>
+              <Text style={styles.btnText}>{permission.canAskAgain || Platform.OS === 'web' ? t.scannerGrantAccess : t.scannerSettings}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.manualBtn} onPress={() => router.push('/add-product')} accessibilityRole="button">
+              <Ionicons name="add" size={20} color={AppColors.primaryDark} />
+              <Text style={styles.cancelText}>{t.addProductTitle}</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -135,19 +149,12 @@ export default function ScannerScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>{t.scannerTitle}</Text>
-          <Text style={styles.subtitle}>{t.scannerSubtitle}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addManualBtn}
-          onPress={() => router.push('/add-product' as never)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.addManualText}>+</Text>
+    <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
+      <ScreenHeader title={t.scannerTitle} subtitle={t.scannerSubtitle} action={
+        <TouchableOpacity style={AppStyles.iconButton} onPress={() => router.push('/add-product')} accessibilityRole="button" accessibilityLabel={t.addProductTitle}>
+          <Ionicons name="add" size={25} color={AppColors.primaryDark} />
         </TouchableOpacity>
-      </View>
+      } />
 
       {(phase.kind === 'scanning' || phase.kind === 'loading') && (
         <View style={styles.cameraContainer}>
@@ -217,44 +224,30 @@ export default function ScannerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: AppColors.background, padding: 24 },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, backgroundColor: AppColors.primary,
-  },
-  title: { fontSize: 24, fontWeight: '700', color: AppColors.white },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  addManualBtn: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  addManualText: { fontSize: 24, color: AppColors.white, lineHeight: 28 },
-  cameraContainer: { flex: 1, position: 'relative' },
+  center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  permissionContent: { flexGrow: 1, justifyContent: 'center', padding: 24, paddingTop: 0 },
+  permissionCard: { ...AppStyles.card, padding: 24, alignItems: 'center' },
+  cameraMark: { width: 80, height: 80, borderRadius: 28, backgroundColor: AppColors.surfaceTint, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  cameraContainer: { flex: 1, position: 'relative', marginHorizontal: 24, marginBottom: 24, borderRadius: 26, overflow: 'hidden', minHeight: 200 },
   camera: { flex: 1 },
   overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
-  scanFrame: { width: 240, height: 160, borderRadius: 12, borderWidth: 2, borderColor: AppColors.accent, backgroundColor: 'transparent' },
-  scanHint: {
-    position: 'absolute', bottom: 32, alignSelf: 'center', color: AppColors.white, fontSize: 14,
-    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, overflow: 'hidden',
-  },
+  scanFrame: { width: '80%', maxWidth: 280, height: 160, borderRadius: 20, borderWidth: 2, borderColor: AppColors.accent, backgroundColor: 'transparent' },
+  scanHint: { position: 'absolute', bottom: 28, left: 16, right: 16, textAlign: 'center', color: AppColors.white, fontSize: 14, lineHeight: 20, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16, overflow: 'hidden' },
   loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { color: AppColors.white, fontSize: 16, fontWeight: '600' },
-  form: { padding: 24, gap: 4 },
-  formTitle: { fontSize: 22, fontWeight: '700', color: AppColors.text, marginBottom: 4 },
+  loadingText: { color: AppColors.white, fontSize: 16, fontWeight: '500' },
+  form: { padding: 24, gap: 4, paddingBottom: 32 },
+  formTitle: { fontSize: 22, fontWeight: '600', color: AppColors.text, marginBottom: 4 },
   formBarcode: { fontSize: 12, color: AppColors.textLight, marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: AppColors.textLight, marginTop: 16, marginBottom: 6 },
-  input: { borderWidth: 1.5, borderColor: AppColors.border, borderRadius: 10, padding: 14, fontSize: 16, color: AppColors.text, backgroundColor: AppColors.white },
-  inputHint: { fontSize: 12, color: AppColors.textLight, marginTop: 5 },
-  btn: { backgroundColor: AppColors.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 24 },
-  btnText: { color: AppColors.white, fontSize: 16, fontWeight: '700' },
-  cancelBtn: { alignItems: 'center', marginTop: 12, paddingVertical: 8 },
-  cancelText: { color: AppColors.textLight, fontSize: 15 },
-  permTitle: { fontSize: 20, fontWeight: '700', color: AppColors.text, marginBottom: 8 },
-  permText: { fontSize: 14, color: AppColors.textLight, textAlign: 'center', marginBottom: 24 },
-  successIcon: {
-    fontSize: 64, color: AppColors.good, fontWeight: '700', backgroundColor: AppColors.goodBg,
-    width: 100, height: 100, borderRadius: 50, textAlign: 'center', lineHeight: 100, marginBottom: 16,
-  },
-  successTitle: { fontSize: 20, fontWeight: '700', color: AppColors.text, marginBottom: 24 },
+  label: { fontSize: 14, fontWeight: '500', color: AppColors.text, marginTop: 20, marginBottom: 8 },
+  input: { ...AppStyles.input },
+  inputHint: { fontSize: 13, lineHeight: 20, color: AppColors.textLight, marginTop: 6 },
+  btn: { ...AppStyles.button, alignSelf: 'stretch', marginTop: 24 },
+  btnText: { ...AppStyles.buttonText, textAlign: 'center' },
+  manualBtn: { minHeight: 52, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 12, alignSelf: 'stretch' },
+  cancelBtn: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  cancelText: { color: AppColors.primaryDark, fontSize: 15, fontWeight: '500' },
+  permTitle: { fontSize: 22, fontWeight: '600', letterSpacing: -0.4, color: AppColors.text, textAlign: 'center', marginBottom: 12 },
+  permText: { fontSize: 14, lineHeight: 22, color: AppColors.textLight, textAlign: 'center' },
+  successIcon: { fontSize: 44, color: AppColors.good, fontWeight: '500', backgroundColor: AppColors.goodBg, width: 96, height: 96, borderRadius: 32, textAlign: 'center', lineHeight: 96, marginBottom: 24 },
+  successTitle: { fontSize: 22, fontWeight: '600', color: AppColors.text, marginBottom: 24, textAlign: 'center' },
 });

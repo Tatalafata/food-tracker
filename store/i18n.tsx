@@ -15,6 +15,14 @@ export interface Translations {
   tabSettings: string;
   // Shared
   cancel: string;
+  saveError: string;
+  addProductNoExpiryHint: string;
+  dateYear: string;
+  dateMonth: string;
+  dateDay: string;
+  scannerSettings: string;
+  recipesUnavailable: string;
+  recipesNetworkError: string;
   // Home
   homeSubtitle: (n: number) => string;
   homeExpired: string;
@@ -164,6 +172,12 @@ export interface Translations {
 }
 
 const en: Translations = {
+  dateYear: 'Year', dateMonth: 'Month', dateDay: 'Day',
+  saveError: 'Could not save the change. Please try again.',
+  addProductNoExpiryHint: 'For example: salt, spices or honey',
+  scannerSettings: 'Open settings',
+  recipesUnavailable: 'Recipe suggestions are not available yet. You can already choose your ingredients and preferences.',
+  recipesNetworkError: 'Could not load recipes. Check your connection and try again.',
   tabHome: 'Home', tabPantry: 'Pantry', tabScan: 'Scan', tabCalendar: 'Calendar',
   tabRecipes: 'Recipes', tabSettings: 'Settings', cancel: 'Cancel',
   homeSubtitle: (n) => `${n} item${n !== 1 ? 's' : ''} in pantry`,
@@ -264,6 +278,12 @@ const en: Translations = {
 };
 
 const it: Translations = {
+  dateYear: 'Anno', dateMonth: 'Mese', dateDay: 'Giorno',
+  saveError: 'Non è stato possibile salvare la modifica. Riprova.',
+  addProductNoExpiryHint: 'Per esempio: sale, spezie o miele',
+  scannerSettings: 'Apri le impostazioni',
+  recipesUnavailable: 'I suggerimenti di ricette non sono ancora disponibili. Puoi già scegliere ingredienti e preferenze.',
+  recipesNetworkError: 'Non è stato possibile caricare le ricette. Controlla la connessione e riprova.',
   tabHome: 'Home', tabPantry: 'Dispensa', tabScan: 'Scansiona', tabCalendar: 'Calendario',
   tabRecipes: 'Ricette', tabSettings: 'Impostazioni', cancel: 'Annulla',
   homeSubtitle: (n) => `${n} articol${n !== 1 ? 'i' : 'o'} in dispensa`,
@@ -365,6 +385,12 @@ const it: Translations = {
 };
 
 const fr: Translations = {
+  dateYear: 'Année', dateMonth: 'Mois', dateDay: 'Jour',
+  saveError: 'Impossible d’enregistrer la modification. Réessayez.',
+  addProductNoExpiryHint: 'Par exemple : sel, épices ou miel',
+  scannerSettings: 'Ouvrir les réglages',
+  recipesUnavailable: 'Les suggestions de recettes ne sont pas encore disponibles. Vous pouvez déjà choisir vos ingrédients et préférences.',
+  recipesNetworkError: 'Impossible de charger les recettes. Vérifiez votre connexion et réessayez.',
   tabHome: 'Accueil', tabPantry: 'Garde-manger', tabScan: 'Scanner', tabCalendar: 'Calendrier',
   tabRecipes: 'Recettes', tabSettings: 'Paramètres', cancel: 'Annuler',
   homeSubtitle: (n) => `${n} article${n !== 1 ? 's' : ''} dans le garde-manger`,
@@ -468,6 +494,12 @@ const fr: Translations = {
 };
 
 const de: Translations = {
+  dateYear: 'Jahr', dateMonth: 'Monat', dateDay: 'Tag',
+  saveError: 'Die Änderung konnte nicht gespeichert werden. Bitte erneut versuchen.',
+  addProductNoExpiryHint: 'Zum Beispiel: Salz, Gewürze oder Honig',
+  scannerSettings: 'Einstellungen öffnen',
+  recipesUnavailable: 'Rezeptvorschläge sind noch nicht verfügbar. Zutaten und Vorlieben können bereits ausgewählt werden.',
+  recipesNetworkError: 'Rezepte konnten nicht geladen werden. Verbindung prüfen und erneut versuchen.',
   tabHome: 'Start', tabPantry: 'Vorrat', tabScan: 'Scannen', tabCalendar: 'Kalender',
   tabRecipes: 'Rezepte', tabSettings: 'Einstellungen', cancel: 'Abbrechen',
   homeSubtitle: (n) => `${n} Artikel im Vorrat`,

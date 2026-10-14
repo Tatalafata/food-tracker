@@ -1,50 +1,24 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import React, { useMemo } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ExpiryBadge from '@/components/ExpiryBadge';
 import OnboardingModal from '@/components/OnboardingModal';
-import { AppColors } from '@/constants/theme';
+import ScreenHeader from '@/components/ScreenHeader';
+import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { getDaysUntilExpiry, getExpiryStatus, usePantry } from '@/store/pantry';
 
-function StatCard({ label, count, color, bg }: { label: string; count: number; color: string; bg: string }) {
+function Stat({ label, count, color }: { label: string; count: number; color: string }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: bg }]}>
-      <Text style={[styles.statCount, { color }]}>{count}</Text>
-      <Text style={[styles.statLabel, { color }]}>{label}</Text>
-    </View>
-  );
-}
-
-function ExpiryBadge({ expiryDate }: { expiryDate?: string }) {
-  const { t } = useI18n();
-  if (!expiryDate) {
-    return (
-      <View style={[styles.badge, { backgroundColor: AppColors.border }]}>
-        <Text style={[styles.badgeText, { color: AppColors.textLight }]}>{t.noExpiryDate}</Text>
+    <View style={styles.stat}>
+      <Text style={styles.statCount}>{count}</Text>
+      <View style={styles.statCaption}>
+        <View style={[styles.dot, { backgroundColor: color }]} />
+        <Text style={styles.statLabel}>{label}</Text>
       </View>
-    );
-  }
-  const days = getDaysUntilExpiry(expiryDate);
-  const status = getExpiryStatus(expiryDate);
-  const color = status === 'expired' ? AppColors.expired : status === 'warning' ? AppColors.warning : AppColors.good;
-  const bg = status === 'expired' ? AppColors.expiredBg : status === 'warning' ? AppColors.warningBg : AppColors.goodBg;
-  const label =
-    days < 0 ? t.labelExpiredAgo(Math.abs(days))
-    : days === 0 ? t.labelExpiresToday
-    : days === 1 ? t.labelTomorrow
-    : t.labelDays(days);
-  return (
-    <View style={[styles.badge, { backgroundColor: bg }]}>
-      <Text style={[styles.badgeText, { color }]}>{label}</Text>
     </View>
   );
 }
@@ -52,114 +26,111 @@ function ExpiryBadge({ expiryDate }: { expiryDate?: string }) {
 export default function HomeScreen() {
   const { items, loading, bulkAddItems } = usePantry();
   const { t } = useI18n();
-
   const { expiredCount, warnCount, goodCount, urgentItems } = useMemo(() => {
     let expiredCount = 0, warnCount = 0, goodCount = 0;
-    items.forEach((i) => {
-      const s = getExpiryStatus(i.expiryDate);
-      if (s === 'expired') expiredCount++;
-      else if (s === 'warning') warnCount++;
-      else if (s === 'good') goodCount++;
-      // 'none' (no expiry) items are not counted in stats
+    items.forEach((item) => {
+      const status = getExpiryStatus(item.expiryDate);
+      if (status === 'expired') expiredCount++;
+      else if (status === 'warning') warnCount++;
+      else if (status === 'good') goodCount++;
     });
     const urgentItems = items
-      .filter((i) => i.expiryDate && getDaysUntilExpiry(i.expiryDate) <= 3)
+      .filter((item) => item.expiryDate && getDaysUntilExpiry(item.expiryDate) <= 3)
       .sort((a, b) => getDaysUntilExpiry(a.expiryDate) - getDaysUntilExpiry(b.expiryDate));
     return { expiredCount, warnCount, goodCount, urgentItems };
   }, [items]);
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" color={AppColors.primary} />
-      </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.center}><ActivityIndicator size="large" color={AppColors.primaryDark} /></SafeAreaView>;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
       <OnboardingModal bulkAddItems={bulkAddItems} />
-      <View style={styles.header}>
-        <Text style={styles.appName}>ChefSuggest</Text>
-        <Text style={styles.subtitle}>{t.homeSubtitle(items.length)}</Text>
-      </View>
-
-      <View style={styles.statsRow}>
-        <StatCard label={t.homeExpired} count={expiredCount} color={AppColors.expired} bg={AppColors.expiredBg} />
-        <StatCard label={t.homeExpiringSoon} count={warnCount} color={AppColors.warning} bg={AppColors.warningBg} />
-        <StatCard label={t.homeGood} count={goodCount} color={AppColors.good} bg={AppColors.goodBg} />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {urgentItems.length > 0 ? t.homeNeedsAttention : t.homeAllGood}
-        </Text>
-
-        {urgentItems.length === 0 ? (
+      <FlatList
+        data={urgentItems}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <>
+            <ScreenHeader title="ChefSuggest" subtitle={t.homeSubtitle(items.length)} icon="leaf-outline" />
+            <View style={styles.overview}>
+              <View style={styles.overviewHeading}>
+                <Text style={styles.overviewTitle}>{t.pantryTitle}</Text>
+                <Ionicons name="basket-outline" size={22} color={AppColors.onPrimary} />
+              </View>
+              <View style={styles.statsRow}>
+                <Stat label={t.homeExpired} count={expiredCount} color={AppColors.expired} />
+                <View style={styles.statDivider} />
+                <Stat label={t.homeExpiringSoon} count={warnCount} color={AppColors.warning} />
+                <View style={styles.statDivider} />
+                <Stat label={t.homeGood} count={goodCount} color={AppColors.good} />
+              </View>
+            </View>
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.addAction} onPress={() => router.push('/add-product')} activeOpacity={0.75} accessibilityRole="button">
+                <Ionicons name="add" size={21} color={AppColors.onPrimary} />
+                <Text style={styles.addActionText}>{t.addProductTitle}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.scanAction} onPress={() => router.push('/scanner')} activeOpacity={0.75} accessibilityRole="button">
+                <Ionicons name="scan-outline" size={21} color={AppColors.primaryDark} />
+                <Text style={styles.scanActionText}>{t.tabScan}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.sectionHeading}>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>{urgentItems.length > 0 ? t.homeNeedsAttention : t.homeAllGood}</Text>
+              {urgentItems.length > 0 && <View style={styles.sectionCount}><Text style={styles.sectionCountText}>{urgentItems.length}</Text></View>}
+            </View>
+          </>
+        }
+        ListEmptyComponent={
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🌿</Text>
+            <View style={styles.emptyMark}><Ionicons name="leaf-outline" size={30} color={AppColors.primaryDark} /></View>
             <Text style={styles.emptyText}>{t.homeNothingExpiring}</Text>
           </View>
-        ) : (
-          <FlatList
-            data={urgentItems}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <View style={styles.itemCard}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDate}>{item.expiryDate}</Text>
-                </View>
-                <ExpiryBadge expiryDate={item.expiryDate} />
-              </View>
-            )}
-          />
+        }
+        renderItem={({ item }) => (
+          <View style={styles.itemCard}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <View style={styles.itemMeta}>
+              <Text style={styles.itemDate}>{item.expiryDate}</Text>
+              <ExpiryBadge expiryDate={item.expiryDate} />
+            </View>
+          </View>
         )}
-      </View>
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/scanner' as never)}
-        activeOpacity={0.8}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: AppColors.background },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, backgroundColor: AppColors.primary },
-  appName: { fontSize: 28, fontWeight: '800', color: AppColors.white, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  statsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 16 },
-  statCard: {
-    flex: 1, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
-  },
-  statCount: { fontSize: 26, fontWeight: '700' },
-  statLabel: { fontSize: 11, fontWeight: '600', marginTop: 2, textAlign: 'center' },
-  section: { flex: 1, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: AppColors.text, marginBottom: 10 },
-  itemCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: AppColors.white,
-    borderRadius: 12, padding: 14, marginBottom: 8,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
-  },
-  itemInfo: { flex: 1 },
-  itemName: { fontSize: 15, fontWeight: '600', color: AppColors.text },
-  itemDate: { fontSize: 12, color: AppColors.textLight, marginTop: 2 },
-  badge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
-  badgeText: { fontSize: 12, fontWeight: '700' },
-  emptyCard: { backgroundColor: AppColors.white, borderRadius: 12, padding: 28, alignItems: 'center' },
-  emptyIcon: { fontSize: 40 },
-  emptyText: { fontSize: 15, color: AppColors.textLight, marginTop: 8, textAlign: 'center' },
-  fab: {
-    position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28,
-    backgroundColor: AppColors.primary, justifyContent: 'center', alignItems: 'center',
-    shadowColor: AppColors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
-  },
-  fabText: { fontSize: 30, color: AppColors.white, lineHeight: 34 },
+  center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center' },
+  list: { paddingBottom: 28 },
+  overview: { backgroundColor: AppColors.primary, borderRadius: 26, marginHorizontal: 24, padding: 20 },
+  overviewHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  overviewTitle: { fontSize: 16, fontWeight: '500', color: AppColors.onPrimary },
+  statsRow: { flexDirection: 'row', alignItems: 'stretch', marginTop: 22 },
+  stat: { flex: 1, paddingHorizontal: 2 },
+  statCount: { fontSize: 34, fontWeight: '500', letterSpacing: -1, color: AppColors.onPrimary },
+  statCaption: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  statLabel: { flex: 1, fontSize: 12, lineHeight: 17, color: AppColors.onPrimary },
+  dot: { width: 5, height: 5, borderRadius: 3 },
+  statDivider: { width: 1, backgroundColor: 'rgba(41,75,53,0.12)', marginHorizontal: 12 },
+  actions: { flexDirection: 'row', gap: 10, marginHorizontal: 24, marginTop: 16, marginBottom: 30 },
+  addAction: { ...AppStyles.button, flex: 1, flexDirection: 'row', gap: 8, paddingHorizontal: 12 },
+  addActionText: { ...AppStyles.buttonText, flexShrink: 1, textAlign: 'center', fontSize: 14 },
+  scanAction: { ...AppStyles.button, backgroundColor: AppColors.white, borderColor: AppColors.border, borderWidth: 1, flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
+  scanActionText: { fontSize: 14, fontWeight: '500', color: AppColors.primaryDark },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 24, marginBottom: 16 },
+  sectionTitle: { flex: 1, fontSize: 21, fontWeight: '600', letterSpacing: -0.5, color: AppColors.text },
+  sectionCount: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: AppColors.surfaceTint },
+  sectionCountText: { fontSize: 13, fontWeight: '600', color: AppColors.primaryDark },
+  itemCard: { ...AppStyles.card, padding: 18, marginHorizontal: 24, marginBottom: 10 },
+  itemName: { fontSize: 16, fontWeight: '600', color: AppColors.text, lineHeight: 22 },
+  itemMeta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 10 },
+  itemDate: { fontSize: 12, color: AppColors.textLight },
+  emptyCard: { ...AppStyles.card, marginHorizontal: 24, padding: 28, alignItems: 'center' },
+  emptyMark: { width: 64, height: 64, borderRadius: 24, backgroundColor: AppColors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { fontSize: 15, lineHeight: 22, color: AppColors.textLight, marginTop: 16, textAlign: 'center' },
 });

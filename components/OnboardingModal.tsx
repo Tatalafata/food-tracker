@@ -10,7 +10,9 @@ import {
   View,
 } from 'react-native';
 
-import { AppColors } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { PantryItem } from '@/store/pantry';
 
@@ -78,6 +80,7 @@ interface Props {
 
 export default function OnboardingModal({ bulkAddItems }: Props) {
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -130,7 +133,7 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
   ];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen">
+    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen" onRequestClose={dismiss}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.handle} />
@@ -172,6 +175,9 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
                         <TouchableOpacity
                           key={item.id}
                           style={[styles.chip, active && styles.chipActive]}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: active }}
+                          aria-checked={active}
                           onPress={() => toggle(item.id)}
                           activeOpacity={0.7}>
                           <Text style={[styles.chipText, active && styles.chipTextActive]}>
@@ -188,18 +194,18 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
             <View style={styles.scrollPad} />
           </ScrollView>
 
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.getStartedBtn} onPress={handleGetStarted} activeOpacity={0.8}>
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+            <TouchableOpacity accessibilityRole="button" style={styles.getStartedBtn} onPress={handleGetStarted} activeOpacity={0.8}>
               <Text style={styles.getStartedText}>
                 {selected.size > 0 ? t.onboardingAdd(selected.size) : t.onboardingDone}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.addOwnBtn} onPress={handleAddOwn} activeOpacity={0.8}>
+            <TouchableOpacity accessibilityRole="button" style={styles.addOwnBtn} onPress={handleAddOwn} activeOpacity={0.8}>
               <Text style={styles.addOwnText}>{t.onboardingAddOwn}</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={dismiss} style={styles.skipBtn}>
+            <TouchableOpacity accessibilityRole="button" onPress={dismiss} style={styles.skipBtn}>
               <Text style={styles.skipText}>{t.onboardingSkip}</Text>
             </TouchableOpacity>
           </View>
@@ -210,73 +216,37 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    paddingHorizontal: 20, paddingTop: 12, maxHeight: '92%',
-  },
-  handle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: '#ddd',
-    alignSelf: 'center', marginBottom: 16,
-  },
-  title: { fontSize: 22, fontWeight: '800', color: AppColors.text, textAlign: 'center' },
-  subtitle: {
-    fontSize: 14, color: AppColors.textLight, textAlign: 'center', marginTop: 4, marginBottom: 16,
-  },
+  overlay: { flex: 1, backgroundColor: 'rgba(29,44,34,0.28)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: AppColors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 12, height: '92%' },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: AppColors.border, alignSelf: 'center', marginBottom: 22 },
+  title: { fontSize: 25, fontWeight: '600', letterSpacing: -0.6, color: AppColors.text, textAlign: 'center' },
+  subtitle: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, textAlign: 'center', marginTop: 8, marginBottom: 24 },
   scroll: { flex: 1 },
   scrollPad: { height: 8 },
-
-  // Starter items
-  starterSection: {
-    backgroundColor: AppColors.goodBg, borderRadius: 16, padding: 16, marginBottom: 20,
-    borderWidth: 1.5, borderColor: AppColors.border,
-  },
-  starterTitle: { fontSize: 14, fontWeight: '700', color: AppColors.primary, marginBottom: 2 },
-  starterSubtitle: { fontSize: 12, color: AppColors.textLight, marginBottom: 12 },
-  starterRow: { flexDirection: 'row', gap: 10 },
-  starterCard: {
-    flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 2, elevation: 1,
-  },
-  starterName: { fontSize: 13, fontWeight: '700', color: AppColors.text, textAlign: 'center' },
-  starterExpiry: { fontSize: 10, color: AppColors.textLight, marginTop: 3, textAlign: 'center' },
-  starterBadge: {
-    marginTop: 8, backgroundColor: AppColors.goodBg, borderRadius: 8,
-    paddingHorizontal: 8, paddingVertical: 3,
-  },
-  starterBadgeNone: { backgroundColor: AppColors.border },
+  starterSection: { backgroundColor: AppColors.primary, borderRadius: 22, padding: 16, marginBottom: 24 },
+  starterTitle: { fontSize: 16, fontWeight: '600', color: AppColors.onPrimary, marginBottom: 6 },
+  starterSubtitle: { fontSize: 13, lineHeight: 19, color: AppColors.onPrimary, marginBottom: 16 },
+  starterRow: { flexDirection: 'row', gap: 8 },
+  starterCard: { flex: 1, backgroundColor: AppColors.white, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 6, alignItems: 'center' },
+  starterName: { fontSize: 13, lineHeight: 18, fontWeight: '500', color: AppColors.text, textAlign: 'center' },
+  starterExpiry: { fontSize: 11, lineHeight: 16, color: AppColors.textLight, marginTop: 6, textAlign: 'center' },
+  starterBadge: { marginTop: 10, backgroundColor: AppColors.surfaceTint, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  starterBadgeNone: { backgroundColor: AppColors.surfaceTint },
   starterBadgeText: { fontSize: 14 },
   starterBadgeTextNone: { fontSize: 14 },
-
-  // Extra chips
-  moreTitle: {
-    fontSize: 15, fontWeight: '700', color: AppColors.text, marginBottom: 14,
-  },
-  category: { marginBottom: 16 },
-  categoryLabel: {
-    fontSize: 12, fontWeight: '700', color: AppColors.primary,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8,
-  },
+  moreTitle: { fontSize: 18, fontWeight: '600', color: AppColors.text, marginBottom: 18 },
+  category: { marginBottom: 22 },
+  categoryLabel: { fontSize: 14, fontWeight: '500', color: AppColors.primaryDark, marginBottom: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    borderRadius: 20, borderWidth: 1.5, borderColor: AppColors.border,
-    paddingHorizontal: 14, paddingVertical: 7, backgroundColor: '#fff',
-  },
-  chipActive: { backgroundColor: AppColors.primary, borderColor: AppColors.primary },
-  chipText: { fontSize: 13, color: AppColors.text, fontWeight: '500' },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
-
-  // Footer
-  footer: { paddingVertical: 12, paddingBottom: 28, gap: 10 },
-  getStartedBtn: {
-    backgroundColor: AppColors.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center',
-  },
-  getStartedText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  addOwnBtn: {
-    borderRadius: 14, paddingVertical: 14, alignItems: 'center',
-    borderWidth: 1.5, borderColor: AppColors.primary,
-  },
-  addOwnText: { color: AppColors.primary, fontSize: 15, fontWeight: '700' },
-  skipBtn: { alignItems: 'center', paddingVertical: 4 },
+  chip: { borderRadius: 14, borderWidth: 1, borderColor: AppColors.border, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: AppColors.white },
+  chipActive: { backgroundColor: AppColors.primary, borderColor: AppColors.accent },
+  chipText: { fontSize: 13, color: AppColors.text, fontWeight: '400' },
+  chipTextActive: { color: AppColors.onPrimary, fontWeight: '500' },
+  footer: { paddingTop: 16, gap: 8 },
+  getStartedBtn: { ...AppStyles.button },
+  getStartedText: { ...AppStyles.buttonText },
+  addOwnBtn: { ...AppStyles.button, backgroundColor: AppColors.white, borderWidth: 1, borderColor: AppColors.border },
+  addOwnText: { ...AppStyles.buttonText, color: AppColors.primaryDark },
+  skipBtn: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   skipText: { fontSize: 13, color: AppColors.textLight },
 });

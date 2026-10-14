@@ -1,10 +1,9 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +12,10 @@ import {
   View,
 } from 'react-native';
 
-import { AppColors } from '@/constants/theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import ScreenHeader from '@/components/ScreenHeader';
+import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 
@@ -94,6 +96,9 @@ function DietaryToggles({
               key={d.key}
               style={[styles.dietChip, active && styles.dietChipActive]}
               onPress={() => onToggle(d.key)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: active }}
+              aria-checked={active}
               activeOpacity={0.7}>
               <Text style={[styles.dietChipText, active && styles.dietChipTextActive]}>{d.label}</Text>
             </TouchableOpacity>
@@ -134,6 +139,11 @@ export default function RecipesScreen() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
+  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | null>(null);
+  const errorText = error ? {
+    unavailable: t.recipesUnavailable, emptyPantry: t.recipesEmptyPantryMsg,
+    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError,
+  }[error] : '';
 
   // Custom mode state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -179,6 +189,8 @@ export default function RecipesScreen() {
   });
 
   function switchMode(next: RecipeMode) {
+    if (loading) return;
+    setError(null);
     setMode(next);
     setRecipes([]);
     setFetched(false);
@@ -218,8 +230,10 @@ export default function RecipesScreen() {
   }
 
   async function getRecipes() {
+    if (loading) return;
+    setError(null);
     if (!ANTHROPIC_API_KEY) {
-      Alert.alert(t.recipesApiKeyTitle, t.recipesApiKeyMsg);
+      setError('unavailable');
       return;
     }
 
@@ -227,7 +241,7 @@ export default function RecipesScreen() {
 
     if (mode === 'quick') {
       if (items.length === 0) {
-        Alert.alert(t.recipesEmptyPantryTitle, t.recipesEmptyPantryMsg);
+        setError('emptyPantry');
         return;
       }
       const urgentItems = sortedItems.filter((i) => i.expiryDate).slice(0, 12);
@@ -277,7 +291,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
       ];
 
       if (allIngredients.length === 0) {
-        Alert.alert(t.recipesErrorTitle, t.recipesCustomNoIngredients);
+        setError('noIngredients');
         return;
       }
 
@@ -308,9 +322,8 @@ Return ONLY a JSON array with no extra text, in this exact format:
       const result = await callClaude(prompt);
       setRecipes(result);
       setFetched(true);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      Alert.alert(t.recipesErrorTitle, `Could not fetch recipes.\n\n${msg}`);
+    } catch {
+      setError('network');
     } finally {
       setLoading(false);
     }
@@ -319,16 +332,17 @@ Return ONLY a JSON array with no extra text, in this exact format:
   const allSelected = items.length > 0 && selectedIds.size === items.length;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t.recipesTitle}</Text>
-        <Text style={styles.subtitle}>{t.recipesSubtitle}</Text>
-      </View>
+    <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
+      <ScreenHeader title={t.recipesTitle} subtitle={t.recipesSubtitle} />
 
       {/* Mode toggle */}
       <View style={styles.toggleRow}>
         <TouchableOpacity
           style={[styles.toggleBtn, mode === 'quick' && styles.toggleBtnActive]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: mode === 'quick' }}
+          aria-selected={mode === 'quick'}
+          disabled={loading}
           onPress={() => switchMode('quick')}
           activeOpacity={0.8}>
           <Text style={[styles.toggleBtnText, mode === 'quick' && styles.toggleBtnTextActive]}>
@@ -337,6 +351,10 @@ Return ONLY a JSON array with no extra text, in this exact format:
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.toggleBtn, mode === 'custom' && styles.toggleBtnActive]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: mode === 'custom' }}
+          aria-selected={mode === 'custom'}
+          disabled={loading}
           onPress={() => switchMode('custom')}
           activeOpacity={0.8}>
           <Text style={[styles.toggleBtnText, mode === 'custom' && styles.toggleBtnTextActive]}>
@@ -348,6 +366,13 @@ Return ONLY a JSON array with no extra text, in this exact format:
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
+          {!ANTHROPIC_API_KEY && (
+            <View style={styles.notice}>
+              <Ionicons name="information-circle-outline" size={20} color={AppColors.primaryDark} />
+              <Text style={styles.noticeText}>{t.recipesUnavailable}</Text>
+            </View>
+          )}
+
           {/* ── QUICK MODE ── */}
           {mode === 'quick' && (
             <>
@@ -357,9 +382,10 @@ Return ONLY a JSON array with no extra text, in this exact format:
                 style={[styles.btn, loading && styles.btnDisabled]}
                 onPress={getRecipes}
                 disabled={loading}
+                accessibilityRole="button"
                 activeOpacity={0.8}>
                 {loading ? (
-                  <ActivityIndicator color={AppColors.white} />
+                  <ActivityIndicator color={AppColors.onPrimary} />
                 ) : (
                   <Text style={styles.btnText}>{fetched ? t.recipesRefresh : t.recipesGetIdeas}</Text>
                 )}
@@ -374,7 +400,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>{t.recipesPantrySection}</Text>
                 {items.length > 0 && (
-                  <TouchableOpacity onPress={toggleSelectAll}>
+                  <TouchableOpacity style={styles.selectAllTouch} onPress={toggleSelectAll} accessibilityRole="button">
                     <Text style={styles.selectAllBtn}>
                       {allSelected ? t.recipesDeselectAll : t.recipesSelectAll}
                     </Text>
@@ -392,6 +418,9 @@ Return ONLY a JSON array with no extra text, in this exact format:
                       <TouchableOpacity
                         key={item.id}
                         style={[styles.checkRow, checked && styles.checkRowSelected]}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked }}
+                        aria-checked={checked}
                         onPress={() => toggleItem(item.id)}
                         activeOpacity={0.7}>
                         <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
@@ -420,7 +449,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
                   returnKeyType="done"
                   onSubmitEditing={addExtraIngredient}
                 />
-                <TouchableOpacity style={styles.addBtn} onPress={addExtraIngredient} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.addBtn} accessibilityRole="button" onPress={addExtraIngredient} activeOpacity={0.8}>
                   <Text style={styles.addBtnText}>{t.recipesExtraAdd}</Text>
                 </TouchableOpacity>
               </View>
@@ -430,6 +459,8 @@ Return ONLY a JSON array with no extra text, in this exact format:
                     <TouchableOpacity
                       key={idx}
                       style={styles.chip}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.pantryRemove + ': ' + ing}
                       onPress={() => removeExtraIngredient(idx)}
                       activeOpacity={0.7}>
                       <Text style={styles.chipText}>{ing}</Text>
@@ -459,9 +490,10 @@ Return ONLY a JSON array with no extra text, in this exact format:
                 style={[styles.btn, loading && styles.btnDisabled]}
                 onPress={getRecipes}
                 disabled={loading}
+                accessibilityRole="button"
                 activeOpacity={0.8}>
                 {loading ? (
-                  <ActivityIndicator color={AppColors.white} />
+                  <ActivityIndicator color={AppColors.onPrimary} />
                 ) : (
                   <Text style={styles.btnText}>{fetched ? t.recipesRefresh : t.recipesGetIdeas}</Text>
                 )}
@@ -470,9 +502,15 @@ Return ONLY a JSON array with no extra text, in this exact format:
           )}
 
           {/* ── SHARED: loading / results / empty state ── */}
+          {error && (
+            <View style={[styles.notice, { marginTop: 16 }]} accessibilityRole="alert">
+              <Ionicons name="information-circle-outline" size={20} color={AppColors.primaryDark} />
+              <Text style={styles.noticeText}>{errorText}</Text>
+            </View>
+          )}
           {loading && (
             <View style={styles.loadingCard}>
-              <ActivityIndicator size="large" color={AppColors.primary} />
+              <ActivityIndicator size="large" color={AppColors.primaryDark} />
               <Text style={styles.loadingText}>{t.recipesAsking}</Text>
             </View>
           )}
@@ -489,7 +527,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
 
           {!fetched && !loading && (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>🍳</Text>
+              <View style={styles.emptyStateIcon}><Ionicons name="restaurant-outline" size={32} color={AppColors.primaryDark} /></View>
               <Text style={styles.emptyStateText}>
                 {mode === 'quick' ? t.recipesEmptyState : t.recipesCustomEmptyState}
               </Text>
@@ -502,118 +540,64 @@ Return ONLY a JSON array with no extra text, in this exact format:
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.background },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, backgroundColor: AppColors.primary },
-  title: { fontSize: 24, fontWeight: '700', color: AppColors.white },
-  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-
-  // Mode toggle
-  toggleRow: {
-    flexDirection: 'row',
-    margin: 16,
-    marginBottom: 0,
-    backgroundColor: AppColors.border,
-    borderRadius: 12,
-    padding: 3,
-  },
-  toggleBtn: {
-    flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
-  },
-  toggleBtnActive: { backgroundColor: AppColors.primary },
-  toggleBtnText: { fontSize: 14, fontWeight: '600', color: AppColors.textLight },
-  toggleBtnTextActive: { color: AppColors.white },
-
-  content: { padding: 16, paddingBottom: 48 },
-  intro: { fontSize: 14, color: AppColors.textLight, lineHeight: 20, marginBottom: 16 },
-
-  // Custom mode sections
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: AppColors.text },
-  sectionTitle2: { fontSize: 15, fontWeight: '700', color: AppColors.text, marginTop: 20, marginBottom: 10 },
-  selectAllBtn: { fontSize: 13, color: AppColors.primary, fontWeight: '600' },
+  toggleRow: { flexDirection: 'row', marginHorizontal: 24, backgroundColor: AppColors.surfaceTint, borderRadius: 18, padding: 4 },
+  toggleBtn: { flex: 1, minHeight: 48, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  toggleBtnActive: { backgroundColor: AppColors.white },
+  toggleBtnText: { fontSize: 14, fontWeight: '500', color: AppColors.textLight },
+  toggleBtnTextActive: { color: AppColors.primaryDark },
+  content: { padding: 24, paddingBottom: 32 },
+  intro: { fontSize: 15, color: AppColors.textLight, lineHeight: 23, marginBottom: 8 },
+  notice: { flexDirection: 'row', gap: 10, padding: 16, borderRadius: 18, backgroundColor: AppColors.surfaceTint, marginBottom: 20 },
+  noticeText: { flex: 1, fontSize: 13, lineHeight: 20, color: AppColors.primaryDark },
+  sectionHeader: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 4, marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', letterSpacing: -0.3, color: AppColors.text },
+  sectionTitle2: { fontSize: 18, fontWeight: '600', letterSpacing: -0.3, color: AppColors.text, marginTop: 24, marginBottom: 14 },
+  selectAllTouch: { minHeight: 48, justifyContent: 'center' },
+  selectAllBtn: { fontSize: 13, color: AppColors.primaryDark, fontWeight: '500' },
   emptySection: { fontSize: 14, color: AppColors.textLight, marginBottom: 12 },
-
-  // Checklist
-  checkList: { gap: 6, marginBottom: 4 },
-  checkRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: AppColors.white, borderRadius: 10, padding: 12,
-    borderWidth: 1.5, borderColor: AppColors.border,
-  },
-  checkRowSelected: { borderColor: AppColors.primary, backgroundColor: AppColors.goodBg },
-  checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: AppColors.border,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  checkboxChecked: { backgroundColor: AppColors.primary, borderColor: AppColors.primary },
-  checkmark: { color: AppColors.white, fontSize: 13, fontWeight: '700' },
-  checkLabel: { flex: 1, fontSize: 14, color: AppColors.textLight, fontWeight: '500' },
-  checkLabelChecked: { color: AppColors.text, fontWeight: '600' },
-  expiryPill: { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
-  expiryPillText: { fontSize: 11, fontWeight: '700' },
-
-  // Extra ingredients
+  checkList: { ...AppStyles.card, overflow: 'hidden', marginBottom: 4 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 60, paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: AppColors.border },
+  checkRowSelected: { backgroundColor: AppColors.surfaceTint },
+  checkbox: { width: 22, height: 22, borderRadius: 7, borderWidth: 1.5, borderColor: AppColors.textLight, justifyContent: 'center', alignItems: 'center' },
+  checkboxChecked: { backgroundColor: AppColors.primary, borderColor: AppColors.primaryDark },
+  checkmark: { color: AppColors.onPrimary, fontSize: 13, fontWeight: '700' },
+  checkLabel: { flex: 1, fontSize: 14, color: AppColors.textLight, fontWeight: '400' },
+  checkLabelChecked: { color: AppColors.text, fontWeight: '500' },
+  expiryPill: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5 },
+  expiryPillText: { fontSize: 11, fontWeight: '500' },
   extraRow: { flexDirection: 'row', gap: 8 },
-  extraInput: {
-    flex: 1, borderWidth: 1.5, borderColor: AppColors.border, borderRadius: 10,
-    padding: 12, fontSize: 15, color: AppColors.text, backgroundColor: AppColors.white,
-  },
-  addBtn: {
-    backgroundColor: AppColors.primary, borderRadius: 10,
-    paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center',
-  },
-  addBtnText: { color: AppColors.white, fontWeight: '700', fontSize: 14 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: AppColors.primary, borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 7,
-  },
-  chipText: { color: AppColors.white, fontSize: 13, fontWeight: '600' },
-  chipRemove: { color: 'rgba(255,255,255,0.7)', fontSize: 15, lineHeight: 16 },
-
-  // Notes
-  notesInput: {
-    borderWidth: 1.5, borderColor: AppColors.border, borderRadius: 10,
-    padding: 12, fontSize: 15, color: AppColors.text, backgroundColor: AppColors.white,
-    minHeight: 90,
-  },
-
-  // Dietary toggles
-  dietSection: { marginTop: 4 },
-  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2 },
-  dietChip: {
-    borderWidth: 1.5, borderColor: AppColors.border, borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 7, backgroundColor: AppColors.white,
-  },
-  dietChipActive: { borderColor: AppColors.primary, backgroundColor: AppColors.primary },
-  dietChipText: { fontSize: 13, fontWeight: '600', color: AppColors.textLight },
-  dietChipTextActive: { color: AppColors.white },
-
-  // Button
-  btn: { backgroundColor: AppColors.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 20 },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: AppColors.white, fontSize: 16, fontWeight: '700' },
-
-  // Results
-  loadingCard: { backgroundColor: AppColors.white, borderRadius: 12, padding: 32, alignItems: 'center', gap: 12, marginTop: 16 },
+  extraInput: { ...AppStyles.input, flex: 1, minWidth: 0, fontSize: 14 },
+  addBtn: { ...AppStyles.button, paddingHorizontal: 16, borderRadius: 16 },
+  addBtnText: { ...AppStyles.buttonText, fontSize: 14 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, backgroundColor: AppColors.surfaceTint, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, maxWidth: '100%' },
+  chipText: { color: AppColors.primaryDark, fontSize: 14, fontWeight: '500', flexShrink: 1 },
+  chipRemove: { color: AppColors.primaryDark, fontSize: 20, lineHeight: 22 },
+  notesInput: { ...AppStyles.input, minHeight: 112, lineHeight: 22 },
+  dietSection: { marginTop: 0 },
+  dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  dietChip: { borderWidth: 1, borderColor: AppColors.border, borderRadius: 14, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: AppColors.white },
+  dietChipActive: { borderColor: AppColors.accent, backgroundColor: AppColors.primary },
+  dietChipText: { fontSize: 13, fontWeight: '500', color: AppColors.textLight },
+  dietChipTextActive: { color: AppColors.onPrimary },
+  btn: { ...AppStyles.button, marginTop: 24 },
+  btnDisabled: { opacity: 0.5 },
+  btnText: { ...AppStyles.buttonText },
+  loadingCard: { ...AppStyles.card, padding: 32, alignItems: 'center', gap: 12, marginTop: 20 },
   loadingText: { color: AppColors.textLight, fontSize: 14 },
-  emptyCard: { backgroundColor: AppColors.white, borderRadius: 12, padding: 24, alignItems: 'center', marginTop: 16 },
+  emptyCard: { ...AppStyles.card, padding: 24, alignItems: 'center', marginTop: 20 },
   emptyText: { color: AppColors.textLight, fontSize: 14 },
-  recipeCard: {
-    backgroundColor: AppColors.white, borderRadius: 14, padding: 18, marginTop: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
-  },
-  recipeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-  recipeNumber: { width: 32, height: 32, borderRadius: 16, backgroundColor: AppColors.primary, justifyContent: 'center', alignItems: 'center' },
-  recipeNumberText: { color: AppColors.white, fontWeight: '700', fontSize: 15 },
-  recipeName: { fontSize: 17, fontWeight: '700', color: AppColors.text, flex: 1 },
-  recipeDesc: { fontSize: 14, color: AppColors.textLight, lineHeight: 20, marginBottom: 14 },
-  ingredientsLabel: { fontSize: 12, fontWeight: '700', color: AppColors.primaryLight, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  ingredientsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  ingredientChip: { backgroundColor: AppColors.goodBg, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  ingredientText: { fontSize: 13, color: AppColors.good, fontWeight: '500' },
+  recipeCard: { ...AppStyles.card, padding: 20, marginTop: 20 },
+  recipeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  recipeNumber: { width: 36, height: 36, borderRadius: 12, backgroundColor: AppColors.primary, justifyContent: 'center', alignItems: 'center' },
+  recipeNumberText: { color: AppColors.onPrimary, fontWeight: '500', fontSize: 15 },
+  recipeName: { fontSize: 20, fontWeight: '600', letterSpacing: -0.4, color: AppColors.text, flex: 1 },
+  recipeDesc: { fontSize: 15, color: AppColors.textLight, lineHeight: 23, marginBottom: 18 },
+  ingredientsLabel: { fontSize: 13, fontWeight: '500', color: AppColors.primaryDark, marginBottom: 10 },
+  ingredientsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  ingredientChip: { backgroundColor: AppColors.surfaceTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  ingredientText: { fontSize: 13, color: AppColors.good, fontWeight: '400' },
   emptyState: { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 16 },
-  emptyStateIcon: { fontSize: 52 },
-  emptyStateText: { fontSize: 14, color: AppColors.textLight, textAlign: 'center', marginTop: 12, lineHeight: 20 },
+  emptyStateIcon: { width: 72, height: 72, borderRadius: 24, backgroundColor: AppColors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  emptyStateText: { fontSize: 14, color: AppColors.textLight, textAlign: 'center', marginTop: 16, lineHeight: 22 },
 });
