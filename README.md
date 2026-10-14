@@ -53,6 +53,6 @@ Si lavora su `main` di [Tatalafata/food-tracker](https://github.com/Tatalafata/f
 
 ## Ricette e configurazione
 
-L'interfaccia delle ricette e presente; la generazione dipende da un servizio esterno. La PoC legge `EXPO_PUBLIC_ANTHROPIC_API_KEY`, che sarebbe inclusa nell'app: **non configurare una vera chiave privata nel client**. L'uso reale richiede un servizio lato server. `.env.example` e solo un esempio; i file `.env*` personali restano esclusi da Git.
+Le ricette usano OpenAI GPT-4.1 nano tramite un servizio locale privato. Segui `OPENAI-SETUP.md`: inserisci `OPENAI_API_KEY` nel file `.env` escluso da Git e avvia `npm run api`. La chiave non viene inclusa nell'app. Il servizio funziona sul PC; per telefoni e distribuzione serve un backend HTTPS autenticato con limiti persistenti. `npm run test:api` verifica il servizio con risposte simulate senza spese OpenAI.
 
 Non usare `scripts/reset-project.js`: ripristina lo starter Expo eliminando la struttura corrente. Il relativo comando rapido e stato rimosso.
