@@ -123,6 +123,14 @@ export interface Translations {
   recipesCustomNoIngredients: string;
   // Dietary labels
   recipesDietarySection: string;
+  recipesCookingSection: string;
+  recipesQualityError: string;
+  recipesCookingHint: string;
+  recipesEasyFilter: string;
+  recipesQuickFilter: string;
+  recipeEstimatedTime: (minutes: number) => string;
+  recipeEasy: string;
+  recipeStandard: string;
   dietLabels: {
     vegetarian: string;
     vegan: string;
@@ -257,6 +265,14 @@ const en: Translations = {
   recipesCustomEmptyState: 'Pick ingredients from your pantry, add extras, and include any notes — then tap Get Recipe Ideas.',
   recipesCustomNoIngredients: 'No ingredients selected. Add at least one to get recipe suggestions.',
   recipesDietarySection: 'Dietary preferences',
+  recipesCookingSection: 'How you want to cook',
+  recipesQualityError: 'The recipes were incomplete or did not match your filters. Please try again.',
+  recipesCookingHint: 'Easy: basic techniques, up to 6 steps. Quick: within 30 min, including prep. You can select both.',
+  recipesEasyFilter: 'Easy recipes',
+  recipesQuickFilter: 'Quick recipes',
+  recipeEstimatedTime: (minutes) => `About ${minutes} min total`,
+  recipeEasy: 'Easy',
+  recipeStandard: 'Standard',
   dietLabels: {
     vegetarian: 'Vegetarian', vegan: 'Vegan', pescatarian: 'Pescatarian',
     glutenFree: 'Gluten Free', lactoseFree: 'Lactose Free', dairyFree: 'Dairy Free',
@@ -376,6 +392,14 @@ const it: Translations = {
   recipesCustomEmptyState: 'Scegli ingredienti dalla dispensa, aggiungine altri e inserisci note — poi tocca Trova Ricette.',
   recipesCustomNoIngredients: 'Nessun ingrediente selezionato. Aggiungine almeno uno per ottenere suggerimenti.',
   recipesDietarySection: 'Preferenze alimentari',
+  recipesCookingSection: 'Come vuoi cucinare',
+  recipesQualityError: 'Le ricette erano incomplete o non rispettavano i filtri. Riprova.',
+  recipesCookingHint: 'Facili: tecniche di base, fino a 6 passaggi. Veloci: entro 30 min, preparazione inclusa. Puoi scegliere entrambe.',
+  recipesEasyFilter: 'Ricette facili',
+  recipesQuickFilter: 'Ricette veloci',
+  recipeEstimatedTime: (minutes) => `Circa ${minutes} min totali`,
+  recipeEasy: 'Facile',
+  recipeStandard: 'Standard',
   dietLabels: {
     vegetarian: 'Vegetariano', vegan: 'Vegano', pescatarian: 'Pescatariano',
     glutenFree: 'Senza Glutine', lactoseFree: 'Senza Lattosio', dairyFree: 'Senza Latticini',
@@ -497,6 +521,14 @@ const fr: Translations = {
   recipesCustomEmptyState: "Sélectionnez des ingrédients de votre garde-manger, ajoutez des extras et des notes — puis appuyez sur Obtenir des Idées.",
   recipesCustomNoIngredients: 'Aucun ingrédient sélectionné. Ajoutez-en au moins un pour obtenir des suggestions.',
   recipesDietarySection: 'Préférences alimentaires',
+  recipesCookingSection: 'Votre façon de cuisiner',
+  recipesQualityError: 'Les recettes étaient incomplètes ou ne correspondaient pas aux filtres. Réessayez.',
+  recipesCookingHint: 'Faciles : techniques simples, 6 étapes maximum. Rapides : 30 min maximum, préparation comprise. Les deux sont possibles.',
+  recipesEasyFilter: 'Recettes faciles',
+  recipesQuickFilter: 'Recettes rapides',
+  recipeEstimatedTime: (minutes) => `Environ ${minutes} min au total`,
+  recipeEasy: 'Facile',
+  recipeStandard: 'Standard',
   dietLabels: {
     vegetarian: 'Végétarien', vegan: 'Végane', pescatarian: 'Pescatarien',
     glutenFree: 'Sans Gluten', lactoseFree: 'Sans Lactose', dairyFree: 'Sans Produits Laitiers',
@@ -618,6 +650,14 @@ const de: Translations = {
   recipesCustomEmptyState: 'Wählen Sie Zutaten aus Ihrem Vorrat, fügen Sie weitere hinzu und geben Sie Notizen ein — dann auf Rezeptideen Holen tippen.',
   recipesCustomNoIngredients: 'Keine Zutaten ausgewählt. Fügen Sie mindestens eine Zutat hinzu, um Vorschläge zu erhalten.',
   recipesDietarySection: 'Ernährungspräferenzen',
+  recipesCookingSection: 'So möchtest du kochen',
+  recipesQualityError: 'Die Rezepte waren unvollständig oder entsprachen nicht den Filtern. Bitte versuche es erneut.',
+  recipesCookingHint: 'Einfach: Grundtechniken, bis zu 6 Schritte. Schnell: höchstens 30 Min., inklusive Vorbereitung. Beides ist möglich.',
+  recipesEasyFilter: 'Einfache Rezepte',
+  recipesQuickFilter: 'Schnelle Rezepte',
+  recipeEstimatedTime: (minutes) => `Ca. ${minutes} Min. insgesamt`,
+  recipeEasy: 'Einfach',
+  recipeStandard: 'Standard',
   dietLabels: {
     vegetarian: 'Vegetarisch', vegan: 'Vegan', pescatarian: 'Pescatarisch',
     glutenFree: 'Glutenfrei', lactoseFree: 'Laktosefrei', dairyFree: 'Milchfrei',

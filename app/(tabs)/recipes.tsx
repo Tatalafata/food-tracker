@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import RecipeDetail from '@/components/RecipeDetail';
-import { isRecipeBatch, Recipe, RECIPE_COUNT } from '@/lib/recipes.mjs';
+import RecipeFacts from '@/components/RecipeFacts';
+import { isRecipeBatch, matchesRecipePreferences, Recipe, RecipePreferences, RECIPE_COUNT } from '@/lib/recipes.mjs';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
@@ -26,16 +27,19 @@ type RecipeMode = 'quick' | 'custom';
 
 const RECIPES_API_URL = process.env.EXPO_PUBLIC_RECIPES_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3001' : '');
 
-async function fetchRecipes(prompt: string): Promise<Recipe[]> {
+async function fetchRecipes(prompt: string, preferences: RecipePreferences): Promise<Recipe[]> {
   const response = await fetch(RECIPES_API_URL.replace(/\/$/, '') + '/recipes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ prompt, preferences }),
     signal: AbortSignal.timeout(80000),
   });
-  if (!response.ok) throw new Error(response.status === 402 ? 'credits' : response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : 'network');
+  if (!response.ok) {
+    const failure = await response.json().catch(() => ({}));
+    throw new Error(response.status === 402 ? 'credits' : response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : failure.error === 'invalid_response' ? 'quality' : 'network');
+  }
   const data = await response.json();
-  if (!isRecipeBatch(data.recipes)) throw new Error('network');
+  if (!isRecipeBatch(data.recipes) || !matchesRecipePreferences(data.recipes, preferences)) throw new Error('quality');
   return data.recipes;
 }
 
@@ -64,11 +68,13 @@ function DietaryToggles({
   selectedDiets,
   onToggle,
   label,
+  disabled,
 }: {
   diets: { key: string; label: string }[];
   selectedDiets: Set<string>;
   onToggle: (key: string) => void;
   label: string;
+  disabled: boolean;
 }) {
   return (
     <View style={styles.dietSection}>
@@ -79,6 +85,7 @@ function DietaryToggles({
           return (
             <TouchableOpacity
               key={d.key}
+              disabled={disabled}
               style={[styles.dietChip, active && styles.dietChipActive]}
               onPress={() => onToggle(d.key)}
               accessibilityRole="checkbox"
@@ -94,6 +101,30 @@ function DietaryToggles({
   );
 }
 
+function CookingPreferences({ preferences, onToggle, disabled }: { preferences: RecipePreferences; onToggle: (key: keyof RecipePreferences) => void; disabled: boolean }) {
+  const { t } = useI18n();
+  const options: { key: keyof RecipePreferences; label: string; icon: 'leaf-outline' | 'time-outline' }[] = [
+    { key: 'easy', label: t.recipesEasyFilter, icon: 'leaf-outline' },
+    { key: 'quick', label: t.recipesQuickFilter, icon: 'time-outline' },
+  ];
+  return (
+    <View style={styles.cookingSection}>
+      <Text style={styles.sectionTitle}>{t.recipesCookingSection}</Text>
+      <Text style={styles.cookingHint}>{t.recipesCookingHint}</Text>
+      <View style={styles.dietGrid}>
+        {options.map(option => (
+          <TouchableOpacity key={option.key} style={[styles.cookingChip, preferences[option.key] && styles.cookingChipActive]} disabled={disabled}
+            accessibilityRole="checkbox" accessibilityLabel={option.label} accessibilityState={{ checked: preferences[option.key], disabled }} aria-checked={preferences[option.key]}
+            onPress={() => onToggle(option.key)} activeOpacity={0.7}>
+            <Ionicons name={preferences[option.key] ? 'checkmark-circle-outline' : option.icon} size={18} color={AppColors.avocadoText} />
+            <Text style={styles.cookingChipText}>{option.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function RecipeCard({ recipe, index, keyIngredientsLabel, onPress }: { recipe: Recipe; index: number; keyIngredientsLabel: string; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.recipeCard} onPress={onPress} accessibilityRole="button" accessibilityLabel={recipe.name} activeOpacity={0.8}>
@@ -103,6 +134,7 @@ function RecipeCard({ recipe, index, keyIngredientsLabel, onPress }: { recipe: R
         </View>
         <Text style={styles.recipeName}>{recipe.name}</Text>
       </View>
+      <RecipeFacts recipe={recipe} />
       <Text style={styles.recipeDesc}>{recipe.description}</Text>
       <Text style={styles.ingredientsLabel}>{keyIngredientsLabel}</Text>
       <View style={styles.ingredientsList}>
@@ -125,10 +157,10 @@ export default function RecipesScreen() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
-  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | 'credits' | null>(null);
+  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | 'credits' | 'quality' | null>(null);
   const errorText = error ? {
     unavailable: t.recipesUnavailable, emptyPantry: t.recipesEmptyPantryMsg,
-    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError, limit: t.recipesLimit, credits: t.recipesCredits,
+    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError, limit: t.recipesLimit, credits: t.recipesCredits, quality: t.recipesQualityError,
   }[error] : '';
 
   // Custom mode state
@@ -137,6 +169,7 @@ export default function RecipesScreen() {
   const [extraInput, setExtraInput] = useState('');
   const [selectedDiets, setSelectedDiets] = useState<Set<string>>(new Set());
   const [notes, setNotes] = useState('');
+  const [preferences, setPreferences] = useState<RecipePreferences>({ easy: false, quick: false });
   const extraInputRef = useRef<TextInput>(null);
 
   const DIETS: { key: string; label: string; promptLabel: string }[] = [
@@ -155,12 +188,26 @@ export default function RecipesScreen() {
   ];
 
   function toggleDiet(key: string) {
+    if (loading) return;
+    clearResults();
     setSelectedDiets((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
+  }
+
+  function clearResults() {
+    setRecipes([]);
+    setFetched(false);
+    setError(null);
+  }
+
+  function toggleCookingPreference(key: keyof RecipePreferences) {
+    if (loading) return;
+    setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
+    clearResults();
   }
 
   function buildDietLine(): string {
@@ -289,14 +336,15 @@ Return complete recipes for one person with quantified ingredients and ordered p
     }
 
     setLoading(true);
+    setRecipes([]);
     setFetched(false);
     try {
-      const result = await fetchRecipes(prompt);
+      const result = await fetchRecipes(prompt, preferences);
       setRecipes(result);
       setFetched(true);
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
-      setError(reason === 'credits' ? 'credits' : reason === 'unavailable' ? 'unavailable' : reason === 'limit' ? 'limit' : 'network');
+      setError(reason === 'credits' ? 'credits' : reason === 'unavailable' ? 'unavailable' : reason === 'limit' ? 'limit' : reason === 'quality' ? 'quality' : 'network');
     } finally {
       setLoading(false);
     }
@@ -350,7 +398,8 @@ Return complete recipes for one person with quantified ingredients and ordered p
           {mode === 'quick' && (
             <>
               <Text style={styles.intro}>{t.recipesIntro}</Text>
-              <DietaryToggles diets={DIETS} selectedDiets={selectedDiets} onToggle={toggleDiet} label={t.recipesDietarySection} />
+              <DietaryToggles diets={DIETS} selectedDiets={selectedDiets} onToggle={toggleDiet} label={t.recipesDietarySection} disabled={loading} />
+              <CookingPreferences preferences={preferences} onToggle={toggleCookingPreference} disabled={loading} />
               <TouchableOpacity
                 style={[styles.btn, loading && styles.btnDisabled]}
                 onPress={getRecipes}
@@ -444,7 +493,8 @@ Return complete recipes for one person with quantified ingredients and ordered p
               )}
 
               {/* Dietary section */}
-              <DietaryToggles diets={DIETS} selectedDiets={selectedDiets} onToggle={toggleDiet} label={t.recipesDietarySection} />
+              <DietaryToggles diets={DIETS} selectedDiets={selectedDiets} onToggle={toggleDiet} label={t.recipesDietarySection} disabled={loading} />
+              <CookingPreferences preferences={preferences} onToggle={toggleCookingPreference} disabled={loading} />
 
               {/* Notes section */}
               <Text style={styles.sectionTitle2}>{t.recipesNotesSection}</Text>
@@ -517,7 +567,7 @@ Return complete recipes for one person with quantified ingredients and ordered p
 const styles = StyleSheet.create({
   toggleRow: { flexDirection: 'row', marginHorizontal: 24, backgroundColor: AppColors.surfaceTint, borderRadius: 18, padding: 4 },
   toggleBtn: { flex: 1, minHeight: 48, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  toggleBtnActive: { backgroundColor: AppColors.white },
+  toggleBtnActive: { backgroundColor: AppColors.limeTint },
   toggleBtnText: { fontSize: 14, fontWeight: '500', color: AppColors.textLight },
   toggleBtnTextActive: { color: AppColors.primaryDark },
   content: { padding: 24, paddingBottom: 32 },
@@ -555,24 +605,29 @@ const styles = StyleSheet.create({
   dietChipActive: { borderColor: AppColors.accent, backgroundColor: AppColors.primary },
   dietChipText: { fontSize: 13, fontWeight: '500', color: AppColors.textLight },
   dietChipTextActive: { color: AppColors.onPrimary },
-  btn: { ...AppStyles.button, marginTop: 24 },
+  cookingSection: { marginTop: 24, padding: 16, borderRadius: 22, backgroundColor: AppColors.limeTint, borderWidth: 1, borderColor: AppColors.limeBorder },
+  cookingHint: { fontSize: 13, lineHeight: 20, color: AppColors.avocadoText, marginTop: 8, marginBottom: 14 },
+  cookingChip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, borderWidth: 1, borderColor: AppColors.limeBorder, backgroundColor: AppColors.background, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 12, maxWidth: '100%' },
+  cookingChipActive: { backgroundColor: AppColors.avocado, borderColor: AppColors.avocadoText },
+  cookingChipText: { fontSize: 13, fontWeight: '500', color: AppColors.avocadoText, flexShrink: 1 },
+  btn: { ...AppStyles.button, backgroundColor: AppColors.avocado, marginTop: 24 },
   btnDisabled: { opacity: 0.5 },
-  btnText: { ...AppStyles.buttonText },
+  btnText: { ...AppStyles.buttonText, color: AppColors.avocadoText },
   loadingCard: { ...AppStyles.card, padding: 32, alignItems: 'center', gap: 12, marginTop: 20 },
   loadingText: { color: AppColors.textLight, fontSize: 14 },
   emptyCard: { ...AppStyles.card, padding: 24, alignItems: 'center', marginTop: 20 },
   emptyText: { color: AppColors.textLight, fontSize: 14 },
-  recipeCard: { ...AppStyles.card, padding: 20, marginTop: 20 },
+  recipeCard: { ...AppStyles.card, backgroundColor: '#FCFDF8', borderColor: AppColors.limeBorder, padding: 20, marginTop: 16 },
   recipeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  recipeNumber: { width: 36, height: 36, borderRadius: 12, backgroundColor: AppColors.primary, justifyContent: 'center', alignItems: 'center' },
-  recipeNumberText: { color: AppColors.onPrimary, fontWeight: '500', fontSize: 15 },
+  recipeNumber: { width: 36, height: 36, borderRadius: 12, backgroundColor: AppColors.avocado, justifyContent: 'center', alignItems: 'center' },
+  recipeNumberText: { color: AppColors.avocadoText, fontWeight: '500', fontSize: 15 },
   recipeName: { fontSize: 20, fontWeight: '600', letterSpacing: -0.4, color: AppColors.text, flex: 1 },
   recipeDesc: { fontSize: 15, color: AppColors.textLight, lineHeight: 23, marginBottom: 18 },
   ingredientsLabel: { fontSize: 13, fontWeight: '500', color: AppColors.primaryDark, marginBottom: 10 },
   ingredientsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  ingredientChip: { backgroundColor: AppColors.surfaceTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
+  ingredientChip: { backgroundColor: AppColors.limeTint, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7 },
   ingredientText: { fontSize: 13, color: AppColors.good, fontWeight: '400' },
   emptyState: { alignItems: 'center', paddingVertical: 32, paddingHorizontal: 16 },
-  emptyStateIcon: { width: 72, height: 72, borderRadius: 24, backgroundColor: AppColors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  emptyStateIcon: { width: 72, height: 72, borderRadius: 24, backgroundColor: AppColors.limeTint, alignItems: 'center', justifyContent: 'center' },
   emptyStateText: { fontSize: 14, color: AppColors.textLight, textAlign: 'center', marginTop: 16, lineHeight: 22 },
 });

@@ -1,9 +1,13 @@
 export interface Recipe {
   name: string;
   description: string;
+  totalMinutes: number;
+  difficulty: 'easy' | 'standard';
   ingredients: { name: string; amount: number | null; unit: string }[];
   steps: string[];
 }
+export interface RecipePreferences { easy: boolean; quick: boolean }
+export function matchesRecipePreferences(recipes: Recipe[], preferences: RecipePreferences): boolean;
 export function isRecipe(value: unknown): value is Recipe;
 export const RECIPE_COUNT: 5;
 export function isRecipeBatch(value: unknown): value is Recipe[];

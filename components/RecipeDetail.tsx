@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { Recipe, scaledAmount, formatStep, normalizeStepShares } from '@/lib/recipes.mjs';
 import { useI18n } from '@/store/i18n';
+import RecipeFacts from '@/components/RecipeFacts';
 
 export default function RecipeDetail({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const { t, language } = useI18n();
@@ -22,6 +23,7 @@ export default function RecipeDetail({ recipe, onClose }: { recipe: Recipe; onCl
         </View>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Text style={styles.description}>{recipe.description}</Text>
+          <RecipeFacts recipe={recipe} />
           <View style={styles.servings}>
             <Text style={styles.servingsText} accessibilityLiveRegion="polite">{t.recipeServings(servings)}</Text>
             <TouchableOpacity style={AppStyles.iconButton} disabled={servings === 1} accessibilityRole="button" accessibilityLabel={t.recipeFewer} onPress={() => setServings(n => n - 1)}>
@@ -53,13 +55,13 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: 24, lineHeight: 30, fontWeight: '600', color: AppColors.text },
   content: { paddingHorizontal: 24, paddingBottom: 32 },
   description: { fontSize: 14, lineHeight: 22, color: AppColors.textLight, marginBottom: 16 },
-  servings: { ...AppStyles.card, flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12 },
+  servings: { ...AppStyles.card, backgroundColor: AppColors.limeTint, borderColor: AppColors.limeBorder, flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12 },
   servingsText: { flex: 1, fontSize: 16, fontWeight: '600', color: AppColors.text },
   section: { fontSize: 20, fontWeight: '600', color: AppColors.text, marginTop: 28, marginBottom: 16 },
   ingredient: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: AppColors.border },
   ingredientName: { flexGrow: 1, flexShrink: 1, fontSize: 15, lineHeight: 22, color: AppColors.text },
   quantity: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: AppColors.primaryDark },
   step: { flexDirection: 'row', gap: 14, marginBottom: 20 },
-  number: { width: 32, height: 32, borderRadius: 10, backgroundColor: AppColors.surfaceTint, textAlign: 'center', lineHeight: 32, color: AppColors.primaryDark, fontWeight: '600' },
+  number: { width: 32, height: 32, borderRadius: 10, backgroundColor: AppColors.avocado, textAlign: 'center', lineHeight: 32, color: AppColors.avocadoText, fontWeight: '600' },
   stepText: { flex: 1, fontSize: 15, lineHeight: 24, color: AppColors.text },
 });
