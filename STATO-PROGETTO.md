@@ -50,7 +50,7 @@ Aggiornato il 14 ottobre 2026. Questo file permette alle nuove chat di riprender
 - Chiave inserita dal proprietario e caricata nel servizio. Primo tentativo bloccato per credito esaurito; dopo la ricarica, prova reale riuscita: due suggerimenti in italiano ricevuti tramite il servizio locale con pasta, pomodori, olio e ceci. I suggerimenti erano molto simili: qualita e varieta richiedono altre valutazioni; non considerare questa prova una validazione delle restrizioni alimentari. Aggiunto messaggio dedicato al credito esaurito nelle quattro lingue. Il server deve partire fuori dal sandbox per raggiungere OpenAI su questo PC (altrimenti EACCES).
 
 - Ricette migrate al servizio locale `server/recipes.mjs` con GPT-4.1 nano. Chiave privata `OPENAI_API_KEY` in `.env`, nessuna chiave nel client. Avvio con `npm run api`; guida in `OPENAI-SETUP.md`.
-- Due ricette complete, massimo 2.200 token in uscita, cache giornaliera, 20 tentativi/giorno e intervallo 30 secondi. Limiti in memoria, azzerati al riavvio: non costituiscono un limite di spesa persistente.
+- Cinque ricette complete, massimo 5.000 token in uscita, cache giornaliera, 20 tentativi/giorno e intervallo 30 secondi. Limiti in memoria, azzerati al riavvio: non costituiscono un limite di spesa persistente.
 - Il server ascolta solo su loopback. Per telefoni e distribuzione resta necessario un backend HTTPS autenticato con limiti persistenti. Configurazione client tramite `EXPO_PUBLIC_RECIPES_API_URL`.
 - Test automatici con risposte simulate superati; collegamento reale OpenAI verificato dopo la ricarica. Il servizio rimane attivo sul PC. Qualita delle ricette ancora da valutare con altri ingredienti e preferenze.
 - `npm run check` e `npm run test:api` superati. In anteprima verificata la chiamata al servizio e il messaggio senza chiave. Creato `.env` locale con soli segnaposto, escluso da Git; servizio locale avviato senza credenziali.
@@ -66,3 +66,10 @@ Aggiornato il 14 ottobre 2026. Questo file permette alle nuove chat di riprender
 - Prova reale nel browser: ricette con salmone, spinaci, olio e patate; apertura/chiusura, ritorno a una porzione alla riapertura, moltiplicazione 1/2 persone e blocco ai limiti 1/12 verificati. Dati della dispensa conservati. I riferimenti alle dosi ripartiscono proporzionalmente l'ingrediente se il modello assegna quote complessive superiori al totale; controllata la pulizia delle unita duplicate. Qualita culinaria ancora da valutare; nessun test su telefoni reali.
 
 Ricette complete con porzioni concordate e implementate. Seguire le prossime richieste della product manager, con priorita all'uso sul cellulare.
+
+### Cinque proposte per richiesta
+
+- Il precedente numero di due ricette era un limite esplicito del codice, non un effetto dei troppi ingredienti. Su richiesta della product manager, generazione portata a cinque ricette complete in una sola chiamata, con combinazioni e preparazioni diverse.
+- Numero condiviso fra client e server, validazione di cinque ricette complete con titoli diversi. Il client e il server rifiutano risposte incomplete; cache, limite di 20 richieste/giorno e 30 secondi fra chiamate conservati. Il modello resta GPT-4.1 nano. Budget risposta 5.000 token e timeout adattati al testo piu lungo; stima dei costi aggiornata in OPENAI-SETUP.md.
+- Mostrato il numero delle proposte sopra l'elenco nelle quattro lingue. Quantita, preparazione completa e ricalcolo porzioni conservati.
+- Sei test automatici superati: batch di cinque, rifiuto batch da due/quattro/sei o incompleti/duplicati, cache completa, limiti, errori credito/chiave e calcolo porzioni. Prova reale in anteprima con cinque risultati; quinta ricetta aperta e dosi raddoppiate da una a due persone. Nessuna modifica alla dispensa o alle preferenze salvate. Test su telefoni reali ancora da fare.

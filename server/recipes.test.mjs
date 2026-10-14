@@ -1,7 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRecipeServer } from './recipes.mjs';
-import { isRecipe, scaledAmount, formatStep, normalizeStepShares } from '../lib/recipes.mjs';
+import { isRecipe, isRecipeBatch, scaledAmount, formatStep, normalizeStepShares } from '../lib/recipes.mjs';
+
+const fixtureRecipes = Array.from({ length: 5 }, (_, index) => ({
+  name: 'Pasta ' + (index + 1), description: 'Simple recipe',
+  ingredients: [{ name: 'pasta', amount: 80, unit: 'g' }], steps: ['Boil water.', 'Cook the pasta.'],
+}));
+
+test('a batch requires five complete recipes with different titles', () => {
+  assert.ok(isRecipeBatch(fixtureRecipes));
+  assert.equal(isRecipeBatch(fixtureRecipes.slice(0, 2)), false);
+  assert.equal(isRecipeBatch(fixtureRecipes.slice(0, 4)), false);
+  assert.equal(isRecipeBatch([...fixtureRecipes, { ...fixtureRecipes[0], name: 'Sixth recipe' }]), false);
+  assert.equal(isRecipeBatch([...fixtureRecipes.slice(0, 4), { ...fixtureRecipes[4], steps: [] }]), false);
+  assert.equal(isRecipeBatch([...fixtureRecipes.slice(0, 4), { ...fixtureRecipes[4], name: ' PASTA 1 ' }]), false);
+});
 
 test('servings multiply numeric quantities without changing to-taste ingredients', () => {
   assert.equal(scaledAmount(150, 1), 150);
@@ -30,9 +44,9 @@ test('private proxy: structured request, cache, cap and blocked origins', async 
     calls++;
     const request = JSON.parse(options.body);
     assert.equal(request.model, 'gpt-4.1-nano');
-    assert.equal(request.max_completion_tokens, 2200);
+    assert.equal(request.max_completion_tokens, 5000);
     assert.equal(request.response_format.json_schema.strict, true);
-    return Response.json({ choices: [{ message: { content: JSON.stringify({ recipes: Array.from({ length: 2 }, () => ({ name: 'Pasta', description: 'Simple recipe', ingredients: [{ name: 'pasta', amount: 80, unit: 'g' }], steps: ['Boil water.', 'Cook the pasta.'] })) }) } }] });
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ recipes: fixtureRecipes }) } }] });
   } });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}/recipes`;
@@ -40,12 +54,24 @@ test('private proxy: structured request, cache, cap and blocked origins', async 
   try {
     const first = await ask('pasta');
     assert.equal(first.status, 200);
-    assert.ok((await first.json()).recipes.every(isRecipe));
-    assert.equal((await ask('pasta')).status, 200);
+    assert.deepEqual((await first.json()).recipes, fixtureRecipes);
+    const cached = await ask('pasta');
+    assert.equal(cached.status, 200);
+    assert.deepEqual((await cached.json()).recipes, fixtureRecipes);
     assert.equal(calls, 1);
     assert.equal((await ask('rice')).status, 429);
     assert.equal((await ask('x'.repeat(12001))).status, 400);
     assert.equal((await fetch(url, { method: 'POST', headers: { Origin: 'https://untrusted.example' } })).status, 403);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test('a stale two-recipe response is rejected rather than cached as a complete batch', async () => {
+  const server = createRecipeServer({ key: 'test-only', fetchImpl: async () => Response.json({ choices: [{ message: { content: JSON.stringify({ recipes: fixtureRecipes.slice(0, 2) }) } }] }) });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/recipes`, { method: 'POST', body: JSON.stringify({ prompt: 'pasta' }) });
+    assert.equal(response.status, 502);
+    assert.deepEqual(await response.json(), { error: 'invalid_response' });
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
 

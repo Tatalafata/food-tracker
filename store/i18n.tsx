@@ -25,6 +25,7 @@ export interface Translations {
   recipesNetworkError: string;
   recipesLimit: string;
   recipesCredits: string;
+  recipesResultCount: (n: number) => string;
   recipeOpen: string;
   recipeClose: string;
   recipeIngredients: string;
@@ -183,6 +184,7 @@ export interface Translations {
 }
 
 const en: Translations = {
+  recipesResultCount: (n) => `${n} recipes to try`,
   recipeOpen: "Open full recipe",
   recipeClose: "Close recipe",
   recipeIngredients: "Ingredients",
@@ -300,6 +302,7 @@ const en: Translations = {
 };
 
 const it: Translations = {
+  recipesResultCount: (n) => `${n} ricette da provare`,
   recipeOpen: "Apri la ricetta completa",
   recipeClose: "Chiudi ricetta",
   recipeIngredients: "Ingredienti",
@@ -418,6 +421,7 @@ const it: Translations = {
 };
 
 const fr: Translations = {
+  recipesResultCount: (n) => `${n} recettes à essayer`,
   recipeOpen: "Ouvrir la recette complète",
   recipeClose: "Fermer la recette",
   recipeIngredients: "Ingrédients",
@@ -538,6 +542,7 @@ const fr: Translations = {
 };
 
 const de: Translations = {
+  recipesResultCount: (n) => `${n} Rezepte zum Ausprobieren`,
   recipeOpen: "Vollständiges Rezept öffnen",
   recipeClose: "Rezept schließen",
   recipeIngredients: "Zutaten",

@@ -5,9 +5,9 @@
 3. Avvia `npm run api` in un terminale e lascialo aperto. Riavvialo dopo ogni modifica alla chiave.
 4. Apri l'anteprima, entra in Ricette e premi Trova Ricette.
 
-Il modello e GPT-4.1 nano, senza strumenti aggiuntivi: massimo 2.200 token di risposta per includere ingredienti e preparazione completa, due ricette. Le richieste identiche riusano il risultato fino al cambio del giorno UTC. Sono consentite al massimo 20 chiamate al giorno e una ogni 30 secondi, contando anche i tentativi falliti. Limiti e cache sono in memoria: si azzerano riavviando il servizio. Non sono un tetto di spesa dell'account OpenAI.
+Il modello e GPT-4.1 nano, senza strumenti aggiuntivi: massimo 5.000 token di risposta per includere ingredienti e preparazione completa di cinque ricette. Le richieste identiche riusano il risultato fino al cambio del giorno UTC. Sono consentite al massimo 20 chiamate al giorno e una ogni 30 secondi, contando anche i tentativi falliti. Limiti e cache sono in memoria: si azzerano riavviando il servizio. Non sono un tetto di spesa dell'account OpenAI.
 
-Prezzi verificati: $0,10 per milione di token in ingresso e $0,40 in uscita. Esempio indicativo: 1.000 token in ingresso e 2.200 in uscita costano $0,00098; 1.000 richieste simili circa $0,98, esclusi imposte e hosting. La qualita va verificata con prove reali delle preferenze alimentari; il prezzo effettivo dipende dai token utilizzati.
+Prezzi verificati: $0,10 per milione di token in ingresso e $0,40 in uscita. Esempio indicativo: 1.000 token in ingresso e 5.000 in uscita costano $0,0021 per una richiesta con cinque ricette; 1.000 richieste simili circa $2,10, esclusi imposte e hosting. Il limite di risposta non implica che tutti i token vengano usati. La qualita va verificata con prove reali delle preferenze alimentari; il prezzo effettivo dipende dai token utilizzati.
 
 Fonte: https://developers.openai.com/api/docs/models/gpt-4.1-nano
 

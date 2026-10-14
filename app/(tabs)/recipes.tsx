@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import RecipeDetail from '@/components/RecipeDetail';
-import { isRecipe, Recipe } from '@/lib/recipes.mjs';
+import { isRecipeBatch, Recipe, RECIPE_COUNT } from '@/lib/recipes.mjs';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
@@ -31,11 +31,11 @@ async function fetchRecipes(prompt: string): Promise<Recipe[]> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt }),
-    signal: AbortSignal.timeout(50000),
+    signal: AbortSignal.timeout(80000),
   });
   if (!response.ok) throw new Error(response.status === 402 ? 'credits' : response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : 'network');
   const data = await response.json();
-  if (!Array.isArray(data.recipes) || !data.recipes.every(isRecipe)) throw new Error('network');
+  if (!isRecipeBatch(data.recipes)) throw new Error('network');
   return data.recipes;
 }
 
@@ -249,7 +249,7 @@ Here are the items in my pantry, sorted by urgency (items expiring soonest are f
 
 ${pantryList}
 ${buildDietLine()}
-Suggest exactly 2 recipes that use these ingredients, prioritising items that expire soonest.
+Suggest exactly ${RECIPE_COUNT} distinct recipes that use these ingredients, prioritising items that expire soonest. Use different subsets of ingredients for variety rather than forcing all ingredients into every dish.
 
 Return complete recipes for one person with quantified ingredients and ordered preparation steps, matching the required JSON schema.`;
     } else {
@@ -283,7 +283,7 @@ I want recipe ideas using the following ingredients:
 ${allIngredients.join('\n')}
 ${buildDietLine()}${notesLine}
 
-Suggest exactly 2 recipes that make good use of these ingredients.
+Suggest exactly ${RECIPE_COUNT} distinct recipes that make good use of these ingredients. Use different subsets of ingredients and preparation methods for variety.
 
 Return complete recipes for one person with quantified ingredients and ordered preparation steps, matching the required JSON schema.`;
     }
@@ -494,6 +494,7 @@ Return complete recipes for one person with quantified ingredients and ordered p
             </View>
           )}
 
+          {!loading && recipes.length > 0 && <Text style={styles.sectionTitle2} accessibilityRole="header">{t.recipesResultCount(recipes.length)}</Text>}
           {!loading && recipes.map((recipe, idx) => (
             <RecipeCard key={idx} recipe={recipe} index={idx} keyIngredientsLabel={t.recipeOpen} onPress={() => setSelectedRecipe(recipe)} />
           ))}
