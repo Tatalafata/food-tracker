@@ -285,7 +285,7 @@ export default function AddProductScreen() {
               accessibilityLabel={t.addProductNoExpiry}
               value={noExpiry}
               onValueChange={setNoExpiry}
-              trackColor={{ false: AppColors.border, true: AppColors.accent }}
+              trackColor={{ false: AppColors.border, true: AppColors.avocado }}
               thumbColor={AppColors.white}
             />
           </View>
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   form: { padding: 24, paddingTop: 0, paddingBottom: 40, gap: 4 },
   label: { fontSize: 14, fontWeight: '500', color: AppColors.text, marginTop: 24, marginBottom: 10 },
   input: { ...AppStyles.input },
-  toggleRow: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', marginTop: 24, padding: 20, gap: 12 },
+  toggleRow: { ...AppStyles.card, backgroundColor: AppColors.limeTint, flexDirection: 'row', alignItems: 'center', marginTop: 24, padding: 20, gap: 12 },
   toggleInfo: { flex: 1 },
   toggleLabel: { fontSize: 15, lineHeight: 22, fontWeight: '500', color: AppColors.text },
   toggleSubtitle: { fontSize: 13, lineHeight: 19, color: AppColors.textLight, marginTop: 6 },
@@ -356,17 +356,17 @@ const styles = StyleSheet.create({
   successTitle: { fontSize: 22, fontWeight: '600', color: AppColors.text, textAlign: 'center' },
   pickerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(29,44,34,0.28)' },
   pickerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, justifyContent: 'flex-end' },
-  pickerSheet: { backgroundColor: AppColors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', maxWidth: 640, alignSelf: 'center', paddingTop: 12 },
+  pickerSheet: { backgroundColor: AppColors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', maxWidth: 640, alignSelf: 'center', paddingTop: 12 },
   wheelsRow: { flexDirection: 'row', height: ITEM_H * VISIBLE + 32, paddingHorizontal: 24, marginTop: 8 },
   wheelCol: { flex: 1 },
   wheelLabel: { fontSize: 13, lineHeight: 20, color: AppColors.textLight, textAlign: 'center', marginBottom: 12 },
   wheelTrack: { flex: 1, overflow: 'hidden', position: 'relative' },
-  wheelHighlight: { position: 'absolute', left: 4, right: 4, top: ITEM_H * Math.floor(VISIBLE / 2), height: ITEM_H, backgroundColor: AppColors.surfaceTint, borderRadius: 14 },
+  wheelHighlight: { position: 'absolute', left: 4, right: 4, top: ITEM_H * Math.floor(VISIBLE / 2), height: ITEM_H, backgroundColor: AppColors.avocado, borderRadius: 14 },
   wheelItem: { height: ITEM_H, justifyContent: 'center', alignItems: 'center' },
   wheelText: { fontSize: 20, color: AppColors.textLight, fontWeight: '400' },
-  wheelTextSelected: { color: AppColors.primaryDark, fontWeight: '600', fontSize: 22 },
+  wheelTextSelected: { color: AppColors.avocadoText, fontWeight: '600', fontSize: 22 },
   pickerActions: { flexDirection: 'row', gap: 12, paddingHorizontal: 24, paddingTop: 16 },
-  pickerCancelBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.surfaceTint },
+  pickerCancelBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.limeTint },
   pickerCancelText: { ...AppStyles.buttonText },
   pickerConfirmBtn: { ...AppStyles.button, flex: 1 },
   pickerConfirmText: { ...AppStyles.buttonText },

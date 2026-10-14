@@ -22,18 +22,18 @@ LANGUAGE_OPTIONS.forEach(({ code }) => {
 });
 
 const calendarTheme = {
-  calendarBackground: AppColors.white, textSectionTitleColor: AppColors.textLight,
-  selectedDayBackgroundColor: AppColors.primary, selectedDayTextColor: AppColors.onPrimary,
-  todayTextColor: AppColors.primaryDark, dayTextColor: AppColors.text, textDisabledColor: '#ADB6AA',
-  dotColor: AppColors.warning, selectedDotColor: AppColors.onPrimary, arrowColor: AppColors.primaryDark,
-  monthTextColor: AppColors.primaryDark, textDayFontWeight: '500' as const,
+  calendarBackground: AppColors.surface, textSectionTitleColor: AppColors.textLight,
+  selectedDayBackgroundColor: AppColors.avocado, selectedDayTextColor: AppColors.avocadoText,
+  todayTextColor: AppColors.avocadoText, dayTextColor: AppColors.text, textDisabledColor: '#ADB6AA',
+  dotColor: AppColors.warning, selectedDotColor: AppColors.avocadoText, arrowColor: AppColors.avocadoText,
+  monthTextColor: AppColors.avocadoText, textDayFontWeight: '500' as const,
   textMonthFontWeight: '600' as const, textDayHeaderFontWeight: '400' as const,
   arrowStyle: { minWidth: 48, minHeight: 48, alignItems: 'center' as const, justifyContent: 'center' as const },
   weekVerticalMargin: 2,
   'stylesheet.calendar.main': { dayContainer: { flex: 1, alignItems: 'stretch' } },
   'stylesheet.day.basic': {
     base: { width: '100%', height: 48, alignItems: 'center', justifyContent: 'center' },
-    selected: { backgroundColor: AppColors.primary, borderRadius: 14 },
+    selected: { backgroundColor: AppColors.avocado, borderRadius: 14 },
   },
 };
 
@@ -62,11 +62,11 @@ export default function CalendarScreen() {
         return worst;
       }, 'good');
       const dotColor = worstStatus === 'expired' ? AppColors.expired : worstStatus === 'warning' ? AppColors.warning : AppColors.good;
-      markedDates[date] = { marked: true, dotColor, selected: date === selectedDate, selectedColor: AppColors.primary };
+      markedDates[date] = { marked: true, dotColor, selected: date === selectedDate, selectedColor: AppColors.avocado };
     });
 
     if (selectedDate && !markedDates[selectedDate]) {
-      markedDates[selectedDate] = { selected: true, selectedColor: AppColors.primary };
+      markedDates[selectedDate] = { selected: true, selectedColor: AppColors.avocado };
     }
     return { markedDates, itemsByDate };
   }, [items, selectedDate]);
@@ -131,11 +131,11 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 24, paddingBottom: 28 },
   calendar: { ...AppStyles.card, padding: 10, overflow: 'hidden' },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 18, rowGap: 10, marginVertical: 20 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: 18, rowGap: 10, marginVertical: 20, backgroundColor: AppColors.warmTint, borderRadius: 16, padding: 14 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 6, height: 6, borderRadius: 3 },
   legendLabel: { fontSize: 12, color: AppColors.textLight },
-  dayPanel: { ...AppStyles.card, marginTop: 4, padding: 20 },
+  dayPanel: { ...AppStyles.card, backgroundColor: AppColors.limeTint, marginTop: 4, padding: 20 },
   dayTitle: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: AppColors.text, marginBottom: 12 },
   dayItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   dayDot: { width: 6, height: 6, borderRadius: 3 },

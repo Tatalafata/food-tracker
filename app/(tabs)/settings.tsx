@@ -24,7 +24,7 @@ function RowToggle({ label, subtitle, value, onValueChange }: {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: AppColors.border, true: AppColors.accent }}
+        trackColor={{ false: AppColors.border, true: AppColors.avocado }}
         thumbColor={AppColors.white}
       />
     </View>
@@ -134,17 +134,17 @@ const styles = StyleSheet.create({
   rowSubtitle: { fontSize: 13, lineHeight: 19, color: AppColors.textLight, marginTop: 2 },
   divider: { height: 1, backgroundColor: AppColors.border },
   segmented: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  segment: { flex: 1, minHeight: 48, paddingVertical: 12, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: AppColors.surfaceTint },
-  segmentActive: { backgroundColor: AppColors.primary },
+  segment: { flex: 1, minHeight: 48, paddingVertical: 12, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: AppColors.limeTint },
+  segmentActive: { backgroundColor: AppColors.avocado },
   segmentText: { fontSize: 12, fontWeight: '500', color: AppColors.textLight },
-  segmentTextActive: { color: AppColors.onPrimary },
+  segmentTextActive: { color: AppColors.avocadoText },
   optionList: { ...AppStyles.card, overflow: 'hidden' },
   option: { flexDirection: 'row', alignItems: 'center', minHeight: 76, paddingHorizontal: 20, paddingVertical: 18 },
-  optionSelected: { backgroundColor: AppColors.surfaceTint },
+  optionSelected: { backgroundColor: AppColors.limeTint },
   optionFlag: { fontSize: 25, marginRight: 16 },
   optionLabel: { flex: 1, fontSize: 16, fontWeight: '500', color: AppColors.text },
-  optionLabelSelected: { color: AppColors.primaryDark },
+  optionLabelSelected: { color: AppColors.avocadoText },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: AppColors.textLight, justifyContent: 'center', alignItems: 'center' },
-  radioSelected: { borderColor: AppColors.primaryDark },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: AppColors.primaryDark },
+  radioSelected: { borderColor: AppColors.avocadoText },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: AppColors.avocadoText },
 });

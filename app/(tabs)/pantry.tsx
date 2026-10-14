@@ -40,7 +40,7 @@ export default function PantryScreen() {
     <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
       <ScreenHeader title={t.pantryTitle} subtitle={t.pantrySubtitle(items.length)} action={
         <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/add-product')} accessibilityRole="button" accessibilityLabel={t.addProductTitle}>
-          <Ionicons name="add" size={25} color={AppColors.onPrimary} />
+          <Ionicons name="add" size={25} color={AppColors.avocadoText} />
         </TouchableOpacity>
       } />
       <FlatList
@@ -62,7 +62,7 @@ export default function PantryScreen() {
               {item.expiryDate && <Text style={styles.itemDate}>{t.pantryBestBefore} {item.expiryDate}</Text>}
               <View style={styles.badgeSpace}><ExpiryBadge expiryDate={item.expiryDate} /></View>
             </View>
-            <TouchableOpacity style={AppStyles.iconButton} onPress={() => { setRemoveError(false); setPendingDelete(item); }} accessibilityRole="button" accessibilityLabel={t.pantryRemove + ': ' + item.name}>
+            <TouchableOpacity style={styles.removeIcon} onPress={() => { setRemoveError(false); setPendingDelete(item); }} accessibilityRole="button" accessibilityLabel={t.pantryRemove + ': ' + item.name}>
               <Ionicons name="trash-outline" size={19} color={AppColors.textLight} />
             </TouchableOpacity>
           </View>
@@ -89,7 +89,8 @@ export default function PantryScreen() {
 
 const styles = StyleSheet.create({
   center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center' },
-  addBtn: { ...AppStyles.iconButton, backgroundColor: AppColors.primary },
+  addBtn: { ...AppStyles.iconButton, backgroundColor: AppColors.avocado },
+  removeIcon: { ...AppStyles.iconButton, backgroundColor: AppColors.warmTint },
   list: { paddingHorizontal: 24, paddingBottom: 28, flexGrow: 1 },
   card: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 18, marginBottom: 12 },
   cardBody: { flex: 1, minWidth: 0 },
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
   itemDate: { fontSize: 12, lineHeight: 18, color: AppColors.textLight, marginTop: 4 },
   badgeSpace: { marginTop: 12 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
-  emptyMark: { width: 80, height: 80, borderRadius: 28, backgroundColor: AppColors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  emptyMark: { width: 80, height: 80, borderRadius: 28, backgroundColor: AppColors.limeTint, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { fontSize: 21, fontWeight: '600', color: AppColors.text, marginTop: 20, textAlign: 'center' },
   emptyText: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, marginTop: 8, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(29,44,34,0.28)', justifyContent: 'center', alignItems: 'center', padding: 24 },
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 22, fontWeight: '600', color: AppColors.text },
   modalText: { fontSize: 15, lineHeight: 23, color: AppColors.textLight, marginTop: 12 },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 24 },
-  cancelBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.surfaceTint },
+  cancelBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.limeTint },
   cancelText: { ...AppStyles.buttonText },
   removeBtn: { ...AppStyles.button, flex: 1, backgroundColor: AppColors.expiredBg },
   removeText: { ...AppStyles.buttonText, color: AppColors.expired },

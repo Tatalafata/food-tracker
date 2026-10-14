@@ -31,6 +31,7 @@ export const AppColors = {
   limeTint: '#EEF2DC',
   limeBorder: '#D9E2BB',
   warmTint: '#F5EBDF',
+  surface: '#FCFDF8',
   background: '#F7F8F3',
   white: '#FFFFFF',
   expired: '#A8464F',
@@ -48,14 +49,14 @@ export const AppColors = {
 // Shared native styles keep the same visual language on every screen.
 export const AppStyles = StyleSheet.create({
   screen: { flex: 1, width: '100%', maxWidth: 640, alignSelf: 'center', backgroundColor: AppColors.background },
-  card: { backgroundColor: AppColors.white, borderRadius: 22, borderWidth: 1, borderColor: AppColors.border },
+  card: { backgroundColor: AppColors.surface, borderRadius: 22, borderWidth: 1, borderColor: AppColors.limeBorder },
   input: {
     minHeight: 56, borderWidth: 1, borderColor: AppColors.border, borderRadius: 16,
     paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, color: AppColors.text, backgroundColor: AppColors.white,
   },
-  button: { minHeight: 56, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 18, backgroundColor: AppColors.primary, alignItems: 'center', justifyContent: 'center' },
-  buttonText: { fontSize: 15, fontWeight: '600', color: AppColors.onPrimary },
-  iconButton: { width: 48, height: 48, borderRadius: 16, backgroundColor: AppColors.surfaceTint, alignItems: 'center', justifyContent: 'center' },
+  button: { minHeight: 56, paddingHorizontal: 20, paddingVertical: 16, borderRadius: 18, backgroundColor: AppColors.avocado, alignItems: 'center', justifyContent: 'center' },
+  buttonText: { fontSize: 15, fontWeight: '600', color: AppColors.avocadoText },
+  iconButton: { width: 48, height: 48, borderRadius: 16, backgroundColor: AppColors.limeTint, alignItems: 'center', justifyContent: 'center' },
 });
 
 export const Fonts = Platform.select({

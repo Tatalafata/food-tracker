@@ -15,7 +15,7 @@ export default function TabLayout() {
   const tabIcon = (name: React.ComponentProps<typeof Ionicons>['name']) =>
     function TabIcon({ color, focused }: { color: string; focused: boolean }) {
       return (
-        <View style={{ width: 44, height: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? AppColors.surfaceTint : 'transparent' }}>
+        <View style={{ width: 44, height: 30, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: focused ? AppColors.avocado : 'transparent' }}>
           <Ionicons name={name} size={21} color={color} />
         </View>
       );
@@ -24,7 +24,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: AppColors.primaryDark,
+        tabBarActiveTintColor: AppColors.avocadoText,
         tabBarInactiveTintColor: AppColors.textLight,
         headerShown: false,
         sceneStyle: { backgroundColor: AppColors.background },
@@ -33,8 +33,8 @@ export default function TabLayout() {
         tabBarLabelStyle: { fontSize: 10, lineHeight: 14, height: 14, fontWeight: '500', marginTop: 4, marginHorizontal: 0 },
         tabBarItemStyle: { minHeight: 56, paddingVertical: 0 },
         tabBarStyle: {
-          backgroundColor: AppColors.white,
-          borderTopColor: AppColors.border,
+          backgroundColor: AppColors.surface,
+          borderTopColor: AppColors.limeBorder,
           height: 78 + insets.bottom,
           paddingTop: 8,
           paddingBottom: Math.max(insets.bottom, 10),

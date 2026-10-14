@@ -12,7 +12,7 @@ export default function ScreenHeader({ title, subtitle, icon, action }: {
 }) {
   return (
     <View style={styles.header}>
-      {icon && <View style={styles.mark}><Ionicons name={icon} size={24} color={AppColors.primaryDark} /></View>}
+      {icon && <View style={styles.mark}><Ionicons name={icon} size={24} color={AppColors.avocadoText} /></View>}
       <View style={styles.copy}>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -24,7 +24,7 @@ export default function ScreenHeader({ title, subtitle, icon, action }: {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 24, paddingTop: 26, paddingBottom: 24 },
-  mark: { width: 48, height: 48, borderRadius: 18, backgroundColor: AppColors.primary, alignItems: 'center', justifyContent: 'center' },
+  mark: { width: 48, height: 48, borderRadius: 18, backgroundColor: AppColors.avocado, alignItems: 'center', justifyContent: 'center' },
   copy: { flex: 1, minWidth: 0 },
   title: { fontSize: 27, fontWeight: '600', color: AppColors.text, letterSpacing: -0.8 },
   subtitle: { fontSize: 14, lineHeight: 20, color: AppColors.textLight, marginTop: 5 },

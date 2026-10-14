@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   loadingText: { color: AppColors.textLight, fontSize: 14 },
   emptyCard: { ...AppStyles.card, padding: 24, alignItems: 'center', marginTop: 20 },
   emptyText: { color: AppColors.textLight, fontSize: 14 },
-  recipeCard: { ...AppStyles.card, backgroundColor: '#FCFDF8', borderColor: AppColors.limeBorder, padding: 20, marginTop: 16 },
+  recipeCard: { ...AppStyles.card, backgroundColor: AppColors.surface, borderColor: AppColors.limeBorder, padding: 20, marginTop: 16 },
   recipeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   recipeNumber: { width: 36, height: 36, borderRadius: 12, backgroundColor: AppColors.avocado, justifyContent: 'center', alignItems: 'center' },
   recipeNumberText: { color: AppColors.avocadoText, fontWeight: '500', fontSize: 15 },
