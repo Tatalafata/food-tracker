@@ -24,6 +24,7 @@ export interface Translations {
   recipesUnavailable: string;
   recipesNetworkError: string;
   recipesLimit: string;
+  recipesCredits: string;
   // Home
   homeSubtitle: (n: number) => string;
   homeExpired: string;
@@ -173,6 +174,7 @@ export interface Translations {
 }
 
 const en: Translations = {
+  recipesCredits: 'OpenAI API credit is exhausted. Add credit to your OpenAI API account to generate recipes.',
   recipesLimit: 'Too many requests. Wait 30 seconds; the local limit is 20 requests per day.',
   dateYear: 'Year', dateMonth: 'Month', dateDay: 'Day',
   saveError: 'Could not save the change. Please try again.',
@@ -280,6 +282,7 @@ const en: Translations = {
 };
 
 const it: Translations = {
+  recipesCredits: 'Il credito API OpenAI è esaurito. Ricarica il tuo account API OpenAI per generare le ricette.',
   recipesLimit: 'Troppe richieste. Attendi 30 secondi; il limite locale è 20 richieste al giorno.',
   dateYear: 'Anno', dateMonth: 'Mese', dateDay: 'Giorno',
   saveError: 'Non è stato possibile salvare la modifica. Riprova.',
@@ -388,6 +391,7 @@ const it: Translations = {
 };
 
 const fr: Translations = {
+  recipesCredits: 'Le crédit API OpenAI est épuisé. Rechargez votre compte API OpenAI pour générer des recettes.',
   recipesLimit: 'Trop de demandes. Attendez 30 secondes ; la limite locale est de 20 demandes par jour.',
   dateYear: 'Année', dateMonth: 'Mois', dateDay: 'Jour',
   saveError: 'Impossible d’enregistrer la modification. Réessayez.',
@@ -498,6 +502,7 @@ const fr: Translations = {
 };
 
 const de: Translations = {
+  recipesCredits: 'Das OpenAI-API-Guthaben ist aufgebraucht. Laden Sie Ihr OpenAI-API-Konto auf, um Rezepte zu generieren.',
   recipesLimit: 'Zu viele Anfragen. Bitte 30 Sekunden warten; das lokale Limit beträgt 20 Anfragen pro Tag.',
   dateYear: 'Jahr', dateMonth: 'Monat', dateDay: 'Tag',
   saveError: 'Die Änderung konnte nicht gespeichert werden. Bitte erneut versuchen.',

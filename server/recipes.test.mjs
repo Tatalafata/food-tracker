@@ -34,3 +34,13 @@ test('missing key returns a safe configuration error', async () => {
     assert.deepEqual(await response.json(), { error: 'not_configured' });
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
+
+test('exhausted OpenAI credit becomes a clear error without exposing upstream details', async () => {
+  const server = createRecipeServer({ key: 'test-only', fetchImpl: async () => Response.json({ error: { type: 'insufficient_quota', code: 'credit_balance_exhausted' } }, { status: 429 }) });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/recipes`, { method: 'POST', body: JSON.stringify({ prompt: 'pasta' }) });
+    assert.equal(response.status, 402);
+    assert.deepEqual(await response.json(), { error: 'credits' });
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});

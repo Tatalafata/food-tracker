@@ -36,7 +36,7 @@ async function fetchRecipes(prompt: string): Promise<Recipe[]> {
     body: JSON.stringify({ prompt }),
     signal: AbortSignal.timeout(30000),
   });
-  if (!response.ok) throw new Error(response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : 'network');
+  if (!response.ok) throw new Error(response.status === 402 ? 'credits' : response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : 'network');
   const data = await response.json();
   if (!Array.isArray(data.recipes) || data.recipes.some((r: Recipe) => typeof r.name !== 'string' || typeof r.description !== 'string' || !Array.isArray(r.ingredients))) throw new Error('network');
   return data.recipes;
@@ -127,10 +127,10 @@ export default function RecipesScreen() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
-  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | null>(null);
+  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | 'credits' | null>(null);
   const errorText = error ? {
     unavailable: t.recipesUnavailable, emptyPantry: t.recipesEmptyPantryMsg,
-    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError, limit: t.recipesLimit,
+    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError, limit: t.recipesLimit, credits: t.recipesCredits,
   }[error] : '';
 
   // Custom mode state
@@ -312,7 +312,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
       setFetched(true);
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
-      setError(reason === 'unavailable' ? 'unavailable' : reason === 'limit' ? 'limit' : 'network');
+      setError(reason === 'credits' ? 'credits' : reason === 'unavailable' ? 'unavailable' : reason === 'limit' ? 'limit' : 'network');
     } finally {
       setLoading(false);
     }

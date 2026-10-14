@@ -50,7 +50,12 @@ export function createRecipeServer({ key = process.env.OPENAI_API_KEY, fetchImpl
             } } },
           }),
         });
-        if (!response.ok) { send(502, { error: 'upstream' }); return; }
+        if (!response.ok) {
+          const failure = await response.json().catch(() => ({}));
+          const noCredit = failure.error?.type === 'insufficient_quota';
+          send(noCredit ? 402 : 502, { error: noCredit ? 'credits' : 'upstream' });
+          return;
+        }
         const result = await response.json();
         const recipes = JSON.parse(result.choices?.[0]?.message?.content ?? '{}').recipes;
         if (!Array.isArray(recipes) || recipes.length !== 2 || recipes.some(r => typeof r.name !== 'string' || typeof r.description !== 'string' || !Array.isArray(r.ingredients) || r.ingredients.some(i => typeof i !== 'string'))) { send(502, { error: 'invalid_response' }); return; }
