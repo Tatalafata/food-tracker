@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
+    "api": "node --env-file-if-exists=.env server/recipes.mjs",
+    "test:api": "node --test server/recipes.test.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",

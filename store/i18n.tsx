@@ -23,6 +23,7 @@ export interface Translations {
   scannerSettings: string;
   recipesUnavailable: string;
   recipesNetworkError: string;
+  recipesLimit: string;
   // Home
   homeSubtitle: (n: number) => string;
   homeExpired: string;
@@ -167,11 +168,12 @@ export interface Translations {
   settingsTitle: string;
   settingsLanguage: string;
   settingsLanguageSubtitle: string;
-  // Language name (for Claude prompt)
+  // Language name (for OpenAI prompt)
   languageName: string;
 }
 
 const en: Translations = {
+  recipesLimit: 'Too many requests. Wait 30 seconds; the local limit is 20 requests per day.',
   dateYear: 'Year', dateMonth: 'Month', dateDay: 'Day',
   saveError: 'Could not save the change. Please try again.',
   addProductNoExpiryHint: 'For example: salt, spices or honey',
@@ -213,9 +215,9 @@ const en: Translations = {
   calendarDayItems: (date, n) => `${date} — ${n} item${n !== 1 ? 's' : ''}`,
   calendarDayEmpty: (date) => `${date} — nothing expiring`,
   recipesTitle: 'Recipe Ideas', recipesSubtitle: 'AI-powered suggestions from your pantry',
-  recipesIntro: "ChefSuggest will look at what's expiring soonest and ask Claude to suggest recipes so nothing goes to waste.",
+  recipesIntro: "ChefSuggest will look at what's expiring soonest and ask OpenAI to suggest recipes so nothing goes to waste.",
   recipesGetIdeas: 'Get Recipe Ideas', recipesRefresh: 'Refresh Ideas',
-  recipesAsking: 'Asking Claude for ideas...', recipesNoResult: 'No recipes returned. Try again.',
+  recipesAsking: 'Asking OpenAI for ideas...', recipesNoResult: 'No recipes returned. Try again.',
   recipesKeyIngredients: 'Key ingredients',
   recipesEmptyState: "Tap the button above to get personalised recipe suggestions based on what's expiring soonest in your pantry.",
   recipesApiKeyTitle: 'API Key Missing',
@@ -278,6 +280,7 @@ const en: Translations = {
 };
 
 const it: Translations = {
+  recipesLimit: 'Troppe richieste. Attendi 30 secondi; il limite locale è 20 richieste al giorno.',
   dateYear: 'Anno', dateMonth: 'Mese', dateDay: 'Giorno',
   saveError: 'Non è stato possibile salvare la modifica. Riprova.',
   addProductNoExpiryHint: 'Per esempio: sale, spezie o miele',
@@ -320,9 +323,9 @@ const it: Translations = {
   calendarDayItems: (date, n) => `${date} — ${n} articol${n !== 1 ? 'i' : 'o'}`,
   calendarDayEmpty: (date) => `${date} — nessuna scadenza`,
   recipesTitle: 'Idee Ricette', recipesSubtitle: 'Suggerimenti AI dalla tua dispensa',
-  recipesIntro: 'ChefSuggest analizzerà ciò che scade prima e chiederà a Claude di suggerire ricette per non sprecare nulla.',
+  recipesIntro: 'ChefSuggest analizzerà ciò che scade prima e chiederà a OpenAI di suggerire ricette per non sprecare nulla.',
   recipesGetIdeas: 'Trova Ricette', recipesRefresh: 'Aggiorna Idee',
-  recipesAsking: 'Chiedo idee a Claude...', recipesNoResult: 'Nessuna ricetta trovata. Riprova.',
+  recipesAsking: 'Chiedo idee a OpenAI...', recipesNoResult: 'Nessuna ricetta trovata. Riprova.',
   recipesKeyIngredients: 'Ingredienti chiave',
   recipesEmptyState: 'Tocca il pulsante sopra per ottenere suggerimenti di ricette personalizzati.',
   recipesApiKeyTitle: 'Chiave API Mancante',
@@ -385,6 +388,7 @@ const it: Translations = {
 };
 
 const fr: Translations = {
+  recipesLimit: 'Trop de demandes. Attendez 30 secondes ; la limite locale est de 20 demandes par jour.',
   dateYear: 'Année', dateMonth: 'Mois', dateDay: 'Jour',
   saveError: 'Impossible d’enregistrer la modification. Réessayez.',
   addProductNoExpiryHint: 'Par exemple : sel, épices ou miel',
@@ -428,9 +432,9 @@ const fr: Translations = {
   calendarDayItems: (date, n) => `${date} — ${n} article${n !== 1 ? 's' : ''}`,
   calendarDayEmpty: (date) => `${date} — aucune expiration`,
   recipesTitle: 'Idées Recettes', recipesSubtitle: 'Suggestions IA depuis votre garde-manger',
-  recipesIntro: "ChefSuggest analysera ce qui expire bientôt et demandera à Claude de suggérer des recettes pour éviter le gaspillage.",
+  recipesIntro: "ChefSuggest analysera ce qui expire bientôt et demandera à OpenAI de suggérer des recettes pour éviter le gaspillage.",
   recipesGetIdeas: 'Obtenir des Idées', recipesRefresh: 'Actualiser les Idées',
-  recipesAsking: "Demande d'idées à Claude...", recipesNoResult: 'Aucune recette retournée. Réessayez.',
+  recipesAsking: "Demande d'idées à OpenAI...", recipesNoResult: 'Aucune recette retournée. Réessayez.',
   recipesKeyIngredients: 'Ingrédients clés',
   recipesEmptyState: 'Appuyez sur le bouton ci-dessus pour obtenir des suggestions de recettes personnalisées.',
   recipesApiKeyTitle: 'Clé API Manquante',
@@ -494,6 +498,7 @@ const fr: Translations = {
 };
 
 const de: Translations = {
+  recipesLimit: 'Zu viele Anfragen. Bitte 30 Sekunden warten; das lokale Limit beträgt 20 Anfragen pro Tag.',
   dateYear: 'Jahr', dateMonth: 'Monat', dateDay: 'Tag',
   saveError: 'Die Änderung konnte nicht gespeichert werden. Bitte erneut versuchen.',
   addProductNoExpiryHint: 'Zum Beispiel: Salz, Gewürze oder Honig',
@@ -537,9 +542,9 @@ const de: Translations = {
   calendarDayItems: (date, n) => `${date} — ${n} Artikel`,
   calendarDayEmpty: (date) => `${date} — keine Ablaufdaten`,
   recipesTitle: 'Rezeptideen', recipesSubtitle: 'KI-Vorschläge aus Ihrem Vorrat',
-  recipesIntro: 'ChefSuggest analysiert, was bald abläuft, und fragt Claude nach Rezepten, damit nichts verschwendet wird.',
+  recipesIntro: 'ChefSuggest analysiert, was bald abläuft, und fragt OpenAI nach Rezepten, damit nichts verschwendet wird.',
   recipesGetIdeas: 'Rezeptideen Holen', recipesRefresh: 'Ideen Aktualisieren',
-  recipesAsking: 'Frage Claude nach Ideen...', recipesNoResult: 'Keine Rezepte zurückgegeben. Erneut versuchen.',
+  recipesAsking: 'Frage OpenAI nach Ideen...', recipesNoResult: 'Keine Rezepte zurückgegeben. Erneut versuchen.',
   recipesKeyIngredients: 'Hauptzutaten',
   recipesEmptyState: 'Tippen Sie oben auf die Schaltfläche, um personalisierte Rezeptvorschläge zu erhalten.',
   recipesApiKeyTitle: 'API-Schlüssel Fehlt',

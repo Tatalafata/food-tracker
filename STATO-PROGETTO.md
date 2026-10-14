@@ -37,13 +37,21 @@ Aggiornato il 14 ottobre 2026. Questo file permette alle nuove chat di riprender
 
 ## Limiti conosciuti e prove
 
-- La generazione ricette dipende da un servizio esterno e legge una variabile pubblica nel client. Prima di usare chiavi reali serve una gestione sicura lato server.
+- La generazione ricette usa ora un servizio OpenAI locale con chiave privata lato server. Per telefoni e distribuzione occorre ancora un backend HTTPS autenticato (vedi sezione Integrazione OpenAI).
 - Fotocamera, notifiche, permessi e tastiera richiedono prove su Android e iPhone. In questa configurazione non sono stati usati dispositivi reali: non considerare l'app certificata per entrambi.
 - Il salvataggio su GitHub non distribuisce l'app sugli store e non sincronizza la dispensa tra dispositivi.
 - `npm run check`: superato, nessun errore o avviso del codice. I tre avvisi iniziali in ricette/impostazioni sono stati corretti senza cambiare il comportamento.
 - Anteprima riusata correttamente con `npm run preview -- --no-open`. Verificate home, impostazioni, modalita ricette e selezione ingredienti nel browser a 390 x 844; nessuna chiamata al servizio ricette.
 - Export di produzione Expo per Android e iOS con bytecode Hermes: riuscito per entrambe le piattaforme. Su questo PC il compilatore Hermes ha richiesto esecuzione fuori dal sandbox. L'export verifica la preparazione del codice, non l'installazione o il comportamento su telefoni reali.
 - `npm ci --dry-run --ignore-scripts --offline --no-audit --no-fund`: riuscito; verificata la coerenza tra package e lockfile senza reinstallare o aggiornare le librerie locali. Alcune versioni installate localmente differiscono dal lockfile; non e stata simulata un'installazione completa su un nuovo computer.
+
+## Integrazione OpenAI
+
+- Ricette migrate al servizio locale `server/recipes.mjs` con GPT-4.1 nano. Chiave privata `OPENAI_API_KEY` in `.env`, nessuna chiave nel client. Avvio con `npm run api`; guida in `OPENAI-SETUP.md`.
+- Due ricette, massimo 800 token in uscita, cache giornaliera, 20 tentativi/giorno e intervallo 30 secondi. Limiti in memoria, azzerati al riavvio: non costituiscono un limite di spesa persistente.
+- Il server ascolta solo su loopback. Per telefoni e distribuzione resta necessario un backend HTTPS autenticato con limiti persistenti. Configurazione client tramite `EXPO_PUBLIC_RECIPES_API_URL`.
+- Verifica con risposte simulate, senza chiamate a pagamento. Attivazione reale ancora da completare inserendo la chiave privata sul PC; qualita delle ricette ancora da valutare con il modello reale.
+- `npm run check` e `npm run test:api` superati. In anteprima verificata la chiamata al servizio e il messaggio senza chiave. Creato `.env` locale con soli segnaposto, escluso da Git; servizio locale avviato senza credenziali.
 
 ## Prossima richiesta
 

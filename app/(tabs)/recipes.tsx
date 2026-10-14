@@ -27,31 +27,19 @@ interface Recipe {
 
 type RecipeMode = 'quick' | 'custom';
 
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '';
+const RECIPES_API_URL = process.env.EXPO_PUBLIC_RECIPES_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3001' : '');
 
-async function callClaude(prompt: string): Promise<Recipe[]> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+async function fetchRecipes(prompt: string): Promise<Recipe[]> {
+  const response = await fetch(RECIPES_API_URL.replace(/\/$/, '') + '/recipes', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+    signal: AbortSignal.timeout(30000),
   });
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API error ${response.status}: ${err}`);
-  }
+  if (!response.ok) throw new Error(response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : 'network');
   const data = await response.json();
-  const text: string = data?.content?.[0]?.text ?? '';
-  const match = text.match(/\[[\s\S]*\]/);
-  if (!match) throw new Error('Could not parse recipe response.');
-  return JSON.parse(match[0]) as Recipe[];
+  if (!Array.isArray(data.recipes) || data.recipes.some((r: Recipe) => typeof r.name !== 'string' || typeof r.description !== 'string' || !Array.isArray(r.ingredients))) throw new Error('network');
+  return data.recipes;
 }
 
 function ExpiryPill({ item }: { item: PantryItem }) {
@@ -139,10 +127,10 @@ export default function RecipesScreen() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
-  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | null>(null);
+  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | null>(null);
   const errorText = error ? {
     unavailable: t.recipesUnavailable, emptyPantry: t.recipesEmptyPantryMsg,
-    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError,
+    noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError, limit: t.recipesLimit,
   }[error] : '';
 
   // Custom mode state
@@ -232,7 +220,7 @@ export default function RecipesScreen() {
   async function getRecipes() {
     if (loading) return;
     setError(null);
-    if (!ANTHROPIC_API_KEY) {
+    if (!RECIPES_API_URL) {
       setError('unavailable');
       return;
     }
@@ -263,7 +251,7 @@ Here are the items in my pantry, sorted by urgency (items expiring soonest are f
 
 ${pantryList}
 ${buildDietLine()}
-Suggest 2-3 recipes that use these ingredients, prioritising items that expire soonest.
+Suggest exactly 2 recipes that use these ingredients, prioritising items that expire soonest.
 
 Return ONLY a JSON array with no extra text, in this exact format:
 [
@@ -304,7 +292,7 @@ I want recipe ideas using the following ingredients:
 ${allIngredients.join('\n')}
 ${buildDietLine()}${notesLine}
 
-Suggest 2-3 recipes that make good use of these ingredients.
+Suggest exactly 2 recipes that make good use of these ingredients.
 
 Return ONLY a JSON array with no extra text, in this exact format:
 [
@@ -319,11 +307,12 @@ Return ONLY a JSON array with no extra text, in this exact format:
     setLoading(true);
     setFetched(false);
     try {
-      const result = await callClaude(prompt);
+      const result = await fetchRecipes(prompt);
       setRecipes(result);
       setFetched(true);
-    } catch {
-      setError('network');
+    } catch (cause) {
+      const reason = cause instanceof Error ? cause.message : '';
+      setError(reason === 'unavailable' ? 'unavailable' : reason === 'limit' ? 'limit' : 'network');
     } finally {
       setLoading(false);
     }
@@ -366,7 +355,7 @@ Return ONLY a JSON array with no extra text, in this exact format:
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-          {!ANTHROPIC_API_KEY && (
+          {!RECIPES_API_URL && (
             <View style={styles.notice}>
               <Ionicons name="information-circle-outline" size={20} color={AppColors.primaryDark} />
               <Text style={styles.noticeText}>{t.recipesUnavailable}</Text>
