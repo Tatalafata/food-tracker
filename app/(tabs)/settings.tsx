@@ -32,7 +32,7 @@ export default function SettingsScreen() {
   const { t, language, setLanguage } = useI18n();
   const { prefs, updatePrefs } = useNotificationPrefs();
 
-  const dayOptions: Array<1 | 2 | 3> = [1, 2, 3];
+  const dayOptions: (1 | 2 | 3)[] = [1, 2, 3];
 
   return (
     <SafeAreaView style={styles.container}>

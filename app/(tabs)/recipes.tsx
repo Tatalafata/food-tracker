@@ -161,7 +161,8 @@ export default function RecipesScreen() {
   function toggleDiet(key: string) {
     setSelectedDiets((prev) => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   }
@@ -190,7 +191,8 @@ export default function RecipesScreen() {
   function toggleItem(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }

@@ -30,8 +30,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# Secrets: only the example configuration belongs in Git
+.env*
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -41,4 +42,5 @@ app-example
 # generated native folders
 /ios
 /android
-.env
+# Unused, incomplete nested repository from the initial prototype
+/food-tracker/
