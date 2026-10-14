@@ -47,12 +47,12 @@ Aggiornato il 14 ottobre 2026. Questo file permette alle nuove chat di riprender
 
 ## Integrazione OpenAI
 
-- Chiave inserita dal proprietario e caricata nel servizio. Prova reale bloccata da OpenAI: HTTP 429, `credit_balance_exhausted`, `insufficient_quota`. Serve ricarica del credito API da parte del proprietario. Nessuna ricetta reale generata; aggiunto messaggio dedicato nelle quattro lingue. Il server deve partire fuori dal sandbox per raggiungere OpenAI su questo PC (altrimenti EACCES).
+- Chiave inserita dal proprietario e caricata nel servizio. Primo tentativo bloccato per credito esaurito; dopo la ricarica, prova reale riuscita: due suggerimenti in italiano ricevuti tramite il servizio locale con pasta, pomodori, olio e ceci. I suggerimenti erano molto simili: qualita e varieta richiedono altre valutazioni; non considerare questa prova una validazione delle restrizioni alimentari. Aggiunto messaggio dedicato al credito esaurito nelle quattro lingue. Il server deve partire fuori dal sandbox per raggiungere OpenAI su questo PC (altrimenti EACCES).
 
 - Ricette migrate al servizio locale `server/recipes.mjs` con GPT-4.1 nano. Chiave privata `OPENAI_API_KEY` in `.env`, nessuna chiave nel client. Avvio con `npm run api`; guida in `OPENAI-SETUP.md`.
 - Due ricette, massimo 800 token in uscita, cache giornaliera, 20 tentativi/giorno e intervallo 30 secondi. Limiti in memoria, azzerati al riavvio: non costituiscono un limite di spesa persistente.
 - Il server ascolta solo su loopback. Per telefoni e distribuzione resta necessario un backend HTTPS autenticato con limiti persistenti. Configurazione client tramite `EXPO_PUBLIC_RECIPES_API_URL`.
-- Verifica con risposte simulate, senza chiamate a pagamento. Attivazione reale ancora da completare inserendo la chiave privata sul PC; qualita delle ricette ancora da valutare con il modello reale.
+- Test automatici con risposte simulate superati; collegamento reale OpenAI verificato dopo la ricarica. Il servizio rimane attivo sul PC. Qualita delle ricette ancora da valutare con altri ingredienti e preferenze.
 - `npm run check` e `npm run test:api` superati. In anteprima verificata la chiamata al servizio e il messaggio senza chiave. Creato `.env` locale con soli segnaposto, escluso da Git; servizio locale avviato senza credenziali.
 
 ## Prossima richiesta
