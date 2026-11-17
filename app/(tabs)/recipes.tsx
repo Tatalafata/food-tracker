@@ -20,6 +20,7 @@ import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
 import { isRecipeBatch, matchesRecipePreferences, Recipe, RecipePreferences, RECIPE_COUNT } from '@/lib/recipes.mjs';
 import { equipmentPrompt } from '@/lib/kitchen-equipment';
+import { recipeAreaPrompt } from '@/lib/recipe-area';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { dietaryPrompt, useDietaryPreferences } from '@/store/dietary-preferences';
@@ -135,11 +136,11 @@ export default function RecipesScreen() {
   const { items } = usePantry();
   const { language, t } = useI18n();
   const { custom, defaultIds, ready: dietaryReady } = useDietaryPreferences();
-  const { equipment, loading: kitchenLoading } = useKitchen();
+  const { equipment, area, loading: kitchenLoading } = useKitchen();
   const copy = planningCopy[language];
 
   const [mode, setMode] = useState<RecipeMode>('quick');
-  const [result, setResult] = useState<{ recipes: Recipe[]; dietLine: string; equipmentLine: string } | null>(null);
+  const [result, setResult] = useState<{ recipes: Recipe[]; context: string } | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<RecipeError | null>(null);
@@ -161,8 +162,9 @@ export default function RecipesScreen() {
 
   const selectedDiets = dietSelection ?? new Set(defaultIds);
   const dietLine = dietaryPrompt(selectedDiets, custom);
-  const equipmentLine = equipmentPrompt(equipment);
-  const visibleResult = result?.dietLine === dietLine && result.equipmentLine === equipmentLine ? result : null;
+  const kitchenContext = equipmentPrompt(equipment) + recipeAreaPrompt(area);
+  const recipeContext = dietLine + kitchenContext;
+  const visibleResult = result?.context === recipeContext ? result : null;
   const fetched = visibleResult !== null;
   const recipes = visibleResult?.recipes ?? [];
   const generationDisabled = loading || !dietaryReady || kitchenLoading;
@@ -313,8 +315,8 @@ Return complete recipes for one person with quantified ingredients and ordered p
     setLoading(true);
     setResult(null);
     try {
-      const suggestions = await fetchRecipes(prompt + equipmentLine, preferences);
-      setResult({ recipes: suggestions, dietLine, equipmentLine });
+      const suggestions = await fetchRecipes(prompt + kitchenContext, preferences);
+      setResult({ recipes: suggestions, context: recipeContext });
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
       setError(Object.prototype.hasOwnProperty.call(errorMessages, reason) ? reason as RecipeError : 'network');

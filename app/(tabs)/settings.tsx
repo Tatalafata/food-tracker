@@ -16,6 +16,7 @@ import { feedbackCopy } from '@/store/feedback-copy';
 import { Language, LANGUAGE_OPTIONS, useI18n } from '@/store/i18n';
 import { EXPIRY_DAYS, ExpiryDay, useNotificationPrefs } from '@/store/notifications';
 import { planningCopy } from '@/store/planning-copy';
+import { profileCopy } from '@/store/profile-copy';
 import { useTimers } from '@/store/timers';
 
 function SectionHeader({ title }: { title: string }) {
@@ -52,6 +53,7 @@ export default function SettingsScreen() {
   const [dietSaveError, setDietSaveError] = useState(false);
   const copy = planningCopy[language];
   const feedback = feedbackCopy[language];
+  const profile = profileCopy[language];
 
   function save(update: Parameters<typeof updatePrefs>[0]) {
     setSaveError(false);
@@ -74,14 +76,25 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}>
 
         <View style={[styles.section, styles.shortcuts]}>
+          <TouchableOpacity style={styles.shortcut} accessibilityRole="button" accessibilityLabel={profile.title}
+            onPress={() => router.push('/profile')}>
+            <View style={AppStyles.iconButton}>
+              <Ionicons name="person-circle-outline" size={23} color={AppColors.avocadoText} />
+            </View>
+            <View style={styles.rowInfo}>
+              <Text style={styles.shortcutTitle}>{profile.title}</Text>
+              <Text style={styles.rowSubtitle}>{profile.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={19} color={AppColors.primaryDark} />
+          </TouchableOpacity>
           <KitchenLink kind="equipment" />
-          <TouchableOpacity style={styles.feedbackLink} accessibilityRole="button" accessibilityLabel={feedback.title}
+          <TouchableOpacity style={styles.shortcut} accessibilityRole="button" accessibilityLabel={feedback.title}
             onPress={() => router.push('/feedback')}>
             <View style={AppStyles.iconButton}>
               <Ionicons name="chatbubble-ellipses-outline" size={22} color={AppColors.avocadoText} />
             </View>
             <View style={styles.rowInfo}>
-              <Text style={styles.feedbackTitle}>{feedback.title}</Text>
+              <Text style={styles.shortcutTitle}>{feedback.title}</Text>
               <Text style={styles.rowSubtitle}>{feedback.subtitle}</Text>
             </View>
             <Ionicons name="chevron-forward" size={19} color={AppColors.primaryDark} />
@@ -183,8 +196,8 @@ const styles = StyleSheet.create({
   timerSpace: { paddingBottom: 140 },
   section: { marginBottom: 32 },
   shortcuts: { gap: 8 },
-  feedbackLink: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
-  feedbackTitle: { fontSize: 16, fontWeight: '600', color: AppColors.text },
+  shortcut: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
+  shortcutTitle: { fontSize: 16, fontWeight: '600', color: AppColors.text },
   sectionLabel: { fontSize: 18, fontWeight: '600', color: AppColors.text, letterSpacing: -0.3, marginBottom: 10 },
   sectionSubtitle: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, marginBottom: 18 },
   card: { ...AppStyles.card, paddingHorizontal: 18, paddingVertical: 4 },

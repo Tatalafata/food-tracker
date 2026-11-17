@@ -1,0 +1,10 @@
+# Attivare la copia online
+
+ChefSuggest funziona come ospite. In **Impostazioni → Profilo e zona** si può salvare una zona facoltativa anche con la copia online disattivata. Quando il servizio è collegato, lo stesso indirizzo email permette di salvare una copia dal vecchio telefono e ripristinarla sul nuovo.
+
+1. Crea un progetto nel tuo [pannello Supabase](https://supabase.com/dashboard). Dal suo **SQL Editor** esegui [server/profile-backups.sql](server/profile-backups.sql). Ogni account autenticato può leggere e modificare soltanto la propria copia.
+2. In **Authentication → Email Templates** imposta il modello di accesso via email in modo che includa il codice `{{ .Token }}`. Per il primo collaudo usa un indirizzo del team. Per mandare i codici agli utenti configura un servizio di invio email nelle impostazioni Supabase. [Codici via email](https://supabase.com/docs/guides/auth/auth-email-passwordless) · [Invio delle email](https://supabase.com/docs/guides/auth/auth-smtp)
+3. Nel file `.env` e nell’ambiente di compilazione imposta `EXPO_PUBLIC_PROFILE_URL` all’URL `https://…supabase.co` del progetto e `EXPO_PUBLIC_PROFILE_KEY` alla sua chiave **Publishable** (`sb_publishable_…`). Tieni eventuali chiavi segrete e credenziali di invio fuori dall’app. Riavvia Expo. [Chiavi Supabase](https://supabase.com/docs/guides/getting-started/api-keys)
+4. Sul primo dispositivo accedi con il codice, cerca la copia online e premi **Salva copia online**. Sul secondo dispositivo accedi con lo stesso indirizzo e premi **Ripristina su questo dispositivo**. Verifica dispensa, spesa, ricettario, calendario e preferenze. Con un secondo account verifica anche che non possa leggere la copia del primo.
+
+La copia si aggiorna su richiesta. Salvala di nuovo dopo modifiche importanti e prima di cambiare telefono. Il ripristino chiede conferma perché sostituisce i dati locali nelle categorie coperte. I conti alla rovescia attivi, i permessi del sistema e le credenziali di accesso non fanno parte della copia.

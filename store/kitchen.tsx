@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import { equipmentIds, type EquipmentId } from '@/lib/kitchen-equipment';
+import { cleanRecipeArea } from '@/lib/recipe-area';
 import { ingredientKey, type ShoppingEntry } from '@/lib/shopping';
 
 const storageKey = '@chefsuggest:kitchen';
@@ -14,9 +15,10 @@ interface ShoppingItem extends ShoppingEntry {
 interface KitchenData {
   shopping: ShoppingItem[];
   equipment: EquipmentId[];
+  area: string;
 }
 
-const empty: KitchenData = { shopping: [], equipment: [] };
+const empty: KitchenData = { shopping: [], equipment: [], area: '' };
 
 interface KitchenContext extends KitchenData {
   loading: boolean;
@@ -25,6 +27,7 @@ interface KitchenContext extends KitchenData {
   toggleBought: (id: string) => Promise<void>;
   removeShoppingItem: (id: string) => Promise<void>;
   toggleEquipment: (id: EquipmentId) => Promise<void>;
+  setArea: (value: string) => Promise<void>;
 }
 
 const Kitchen = createContext<KitchenContext | null>(null);
@@ -48,6 +51,7 @@ export function KitchenProvider({ children }: { children: ReactNode }) {
       latest.current = {
         shopping: saved.shopping,
         equipment: equipmentIds.filter(id => saved.equipment.includes(id)),
+        area: cleanRecipeArea(saved.area),
       };
       setData(latest.current);
     }).catch(() => setLoadError(true)).finally(() => setLoading(false));
@@ -93,6 +97,7 @@ export function KitchenProvider({ children }: { children: ReactNode }) {
   return (
     <Kitchen.Provider value={{
       ...data, loading, loadError, addToShopping,
+      setArea: value => save(current => [{ ...current, area: cleanRecipeArea(value) }, undefined]),
       toggleBought: id => save(current => [{
         ...current, shopping: current.shopping.map(item => item.id === id ? { ...item, bought: !item.bought } : item),
       }, undefined]),
