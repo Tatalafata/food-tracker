@@ -48,6 +48,8 @@ export type InspirationResult = Omit<OnlineRecipe, 'url'> & RecipeFacts & { phot
   { id: string; recipe: Recipe; url?: never } | { id: string; url: string; recipe?: never }
 );
 
+export type OnlineInspiration = Extract<InspirationResult, { url: string }>;
+
 const online: OnlineRecipe[] = index;
 const publishedFacts = facts as Record<string, RecipeFacts>;
 const curatedPhotos = selections as { recipes: string[]; photo: InspirationPhoto }[];

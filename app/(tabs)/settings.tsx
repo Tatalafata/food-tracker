@@ -10,6 +10,7 @@ import InspirationPhotoCredits from '@/components/InspirationPhotoCredits';
 import KitchenLink from '@/components/KitchenLink';
 import ReminderAccess from '@/components/ReminderAccess';
 import ScreenHeader from '@/components/ScreenHeader';
+import { TutorialReplay } from '@/components/Tutorial';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useDietaryPreferences } from '@/store/dietary-preferences';
 import { feedbackCopy } from '@/store/feedback-copy';
@@ -18,6 +19,7 @@ import { EXPIRY_DAYS, ExpiryDay, useNotificationPrefs } from '@/store/notificati
 import { planningCopy } from '@/store/planning-copy';
 import { profileCopy } from '@/store/profile-copy';
 import { useTimers } from '@/store/timers';
+import { tutorialCopy } from '@/store/tutorial-copy';
 
 function SectionHeader({ title }: { title: string }) {
   return <Text style={styles.sectionLabel}>{title}</Text>;
@@ -51,9 +53,11 @@ export default function SettingsScreen() {
   const { timers, hidden: timersHidden } = useTimers();
   const [saveError, setSaveError] = useState(false);
   const [dietSaveError, setDietSaveError] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const copy = planningCopy[language];
   const feedback = feedbackCopy[language];
   const profile = profileCopy[language];
+  const tutorial = tutorialCopy[language];
 
   function save(update: Parameters<typeof updatePrefs>[0]) {
     setSaveError(false);
@@ -88,6 +92,17 @@ export default function SettingsScreen() {
             <Ionicons name="chevron-forward" size={19} color={AppColors.primaryDark} />
           </TouchableOpacity>
           <KitchenLink kind="equipment" />
+          <TouchableOpacity style={styles.shortcut} accessibilityRole="button" accessibilityLabel={tutorial.label}
+            onPress={() => setShowTutorial(true)}>
+            <View style={AppStyles.iconButton}>
+              <Ionicons name="help-circle-outline" size={23} color={AppColors.avocadoText} />
+            </View>
+            <View style={styles.rowInfo}>
+              <Text style={styles.shortcutTitle}>{tutorial.label}</Text>
+              <Text style={styles.rowSubtitle}>{tutorial.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={19} color={AppColors.primaryDark} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.shortcut} accessibilityRole="button" accessibilityLabel={feedback.title}
             onPress={() => router.push('/feedback')}>
             <View style={AppStyles.iconButton}>
@@ -187,6 +202,7 @@ export default function SettingsScreen() {
 
         <InspirationPhotoCredits />
       </ScrollView>
+      {showTutorial && <TutorialReplay onClose={() => setShowTutorial(false)} />}
     </SafeAreaView>
   );
 }

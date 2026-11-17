@@ -1,24 +1,26 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Keyboard, Linking, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import InspirationFilters from '@/components/InspirationFilters';
 import { AppColors, AppStyles } from '@/constants/theme';
-import { activeCatalogFilterCount, emptyCatalogFilters, filterInspiration, inspirationIndex, InspirationResult, searchInspiration } from '@/lib/inspiration-search';
+import { activeCatalogFilterCount, emptyCatalogFilters, filterInspiration, inspirationIndex, InspirationResult, type OnlineInspiration, searchInspiration } from '@/lib/inspiration-search';
 import type { Recipe } from '@/lib/recipes.mjs';
 import { STANDARD_DIET_IDS } from '@/store/dietary-preferences';
 import { useI18n } from '@/store/i18n';
 import { formatInspirationCount, inspirationCopy } from '@/store/inspiration-copy';
 
-export default function InspirationCatalog({ onOpenRecipe }: { onOpenRecipe: (recipe: Recipe) => void }) {
+export default function InspirationCatalog({ onOpenRecipe, onOpenOnline }: {
+  onOpenRecipe: (recipe: Recipe) => void;
+  onOpenOnline: (recipe: OnlineInspiration) => void;
+}) {
   const { language, t } = useI18n();
   const copy = inspirationCopy[language];
   const levels = { easy: t.recipeEasy, standard: t.recipeStandard, advanced: copy.advanced };
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState(emptyCatalogFilters);
   const [showFilters, setShowFilters] = useState(false);
-  const [error, setError] = useState(false);
   const list = useRef<FlatList<InspirationResult>>(null);
   const recipes = useMemo(() => inspirationIndex(language), [language]);
   const availableDiets = useMemo(() =>
@@ -30,15 +32,6 @@ export default function InspirationCatalog({ onOpenRecipe }: { onOpenRecipe: (re
   useEffect(() => {
     list.current?.scrollToOffset({ offset: 0, animated: false });
   }, [query, filters]);
-
-  async function open(url: string) {
-    setError(false);
-    try {
-      await Linking.openURL(url);
-    } catch {
-      setError(true);
-    }
-  }
 
   return (
     <View style={styles.catalog}>
@@ -80,7 +73,6 @@ export default function InspirationCatalog({ onOpenRecipe }: { onOpenRecipe: (re
             </TouchableOpacity>
           )}
         </View>
-        {error && <Text accessibilityRole="alert" style={styles.error}>{copy.failed}</Text>}
       </View>
       <FlatList
         ref={list}
@@ -93,8 +85,8 @@ export default function InspirationCatalog({ onOpenRecipe }: { onOpenRecipe: (re
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<Text style={styles.empty}>{copy.empty}</Text>}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} accessibilityRole={item.recipe ? 'button' : 'link'} accessibilityLabel={item.title}
-            onPress={() => item.recipe ? onOpenRecipe(item.recipe) : void open(item.url)}>
+          <TouchableOpacity style={styles.card} accessibilityRole="button" accessibilityLabel={item.title}
+            onPress={() => { Keyboard.dismiss(); if (item.recipe) onOpenRecipe(item.recipe); else onOpenOnline(item); }}>
             {item.photo && (
               <View style={styles.photo}>
                 <Ionicons name="restaurant-outline" size={26} color={AppColors.primaryDark} />
@@ -103,10 +95,7 @@ export default function InspirationCatalog({ onOpenRecipe }: { onOpenRecipe: (re
               </View>
             )}
             <View style={styles.cardText}>
-              <View style={styles.cardHeading}>
-                <Text style={styles.name} numberOfLines={3}>{item.title}</Text>
-                {!item.recipe && <Ionicons name="open-outline" size={14} color={AppColors.textLight} />}
-              </View>
+              <Text style={styles.name} numberOfLines={3}>{item.title}</Text>
               {(item.minutes !== undefined || item.difficulty || item.language !== language) && (
                 <View style={styles.meta}>
                   {item.minutes !== undefined && (
@@ -146,14 +135,12 @@ const styles = StyleSheet.create({
   count: { color: AppColors.textLight, fontSize: 13 },
   reset: { minHeight: 48, justifyContent: 'center' },
   resetLabel: { color: AppColors.primaryDark, textDecorationLine: 'underline', fontSize: 13 },
-  error: { color: AppColors.expired, fontSize: 14 },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   columns: { justifyContent: 'space-between', marginBottom: 12 },
   card: { ...AppStyles.card, width: '48.5%', minHeight: 56, borderRadius: 16, borderColor: AppColors.border, overflow: 'hidden' },
   photo: { aspectRatio: 1.14, backgroundColor: AppColors.limeTint, alignItems: 'center', justifyContent: 'center' },
   cardText: { padding: 10, gap: 7 },
-  cardHeading: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
-  name: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: AppColors.text },
+  name: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: AppColors.text },
   meta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 7, rowGap: 3 },
   time: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   detail: { fontSize: 12, color: AppColors.textLight },

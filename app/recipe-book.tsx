@@ -5,10 +5,12 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import InspirationCatalog from '@/components/InspirationCatalog';
+import OnlineRecipeDetail from '@/components/OnlineRecipeDetail';
 import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { inspirationRecipes } from '@/lib/inspiration';
+import type { OnlineInspiration } from '@/lib/inspiration-search';
 import { Recipe } from '@/lib/recipes.mjs';
 import { useI18n } from '@/store/i18n';
 import { recipeIdentity, useRecipeBook } from '@/store/recipe-book';
@@ -30,6 +32,7 @@ export default function RecipeBookScreen() {
   const copy = recipeBookCopy[language];
   const [tab, setTab] = useState<BookTab>(initialTab === 'inspiration' || initialTab === 'history' ? initialTab : 'favorites');
   const [opened, setOpened] = useState<RecipeRow | null>(null);
+  const [online, setOnline] = useState<OnlineInspiration | null>(null);
   const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });
   const formatDate = (value: string) => dateFormat.format(new Date(value));
   const catalog = inspirationRecipes(language);
@@ -65,7 +68,7 @@ export default function RecipeBookScreen() {
           </TouchableOpacity>
         ))}
       </View>
-      {tab === 'inspiration' ? <InspirationCatalog onOpenRecipe={recipe => setOpened({ recipe })} />
+      {tab === 'inspiration' ? <InspirationCatalog onOpenRecipe={recipe => setOpened({ recipe })} onOpenOnline={setOnline} />
         : loading ? <ActivityIndicator color={AppColors.primaryDark} style={styles.status} /> : (
         <FlatList
           key={tab}
@@ -98,6 +101,7 @@ export default function RecipeBookScreen() {
           )}
         />
       )}
+      {online && <OnlineRecipeDetail entry={online} onClose={() => setOnline(null)} />}
       {opened && (
         <RecipeDetail
           recipe={opened.recipe}

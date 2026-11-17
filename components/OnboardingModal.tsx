@@ -12,11 +12,13 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Tutorial } from '@/components/Tutorial';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { PantryItem } from '@/store/pantry';
 
 const ONBOARDED_KEY = '@chefsuggest:onboarded';
+const TUTORIAL_SEEN_KEY = '@chefsuggest:tutorial_seen';
 
 // ─── Starter items always added on first launch ───────────────────────────────
 
@@ -81,14 +83,26 @@ interface Props {
 export default function OnboardingModal({ bulkAddItems }: Props) {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
-  const [visible, setVisible] = useState(false);
+  const [stage, setStage] = useState<'tutorial' | 'pantry' | null>(null);
+  const [skipped, setSkipped] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    AsyncStorage.getItem(ONBOARDED_KEY).then((val) => {
-      if (!val) setVisible(true);
-    });
+    let active = true;
+    AsyncStorage.multiGet([ONBOARDED_KEY, TUTORIAL_SEEN_KEY]).then((entries) => {
+      if (active && !entries[0][1]) setStage(entries[1][1] ? 'pantry' : 'tutorial');
+    }).catch(() => {});
+    return () => { active = false; };
   }, []);
+
+  function skipTutorial() {
+    setSkipped(true);
+    void AsyncStorage.setItem(TUTORIAL_SEEN_KEY, 'true').catch(() => {});
+  }
+
+  function finishTutorial() {
+    void AsyncStorage.setItem(TUTORIAL_SEEN_KEY, 'true').catch(() => {}).finally(() => setStage('pantry'));
+  }
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -101,7 +115,7 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
 
   const dismiss = async () => {
     await AsyncStorage.setItem(ONBOARDED_KEY, 'true');
-    setVisible(false);
+    setStage(null);
   };
 
   const handleGetStarted = async () => {
@@ -120,7 +134,7 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
 
   const handleAddOwn = async () => {
     await AsyncStorage.setItem(ONBOARDED_KEY, 'true');
-    setVisible(false);
+    setStage(null);
     router.push('/add-product' as never);
   };
 
@@ -132,9 +146,17 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
     { key: 'condiments', label: t.onboardingCategoryCondiments },
   ];
 
+  if (!stage) return null;
+
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen" onRequestClose={dismiss}>
-      <View style={styles.overlay}>
+    <Modal animationType="slide" transparent presentationStyle="overFullScreen"
+      onRequestClose={stage === 'tutorial' ? skipped ? finishTutorial : skipTutorial : dismiss}>
+      {stage === 'tutorial' ? (
+        <View style={styles.tutorialBackground}>
+          <Tutorial skipped={skipped} onSkip={skipTutorial} onDone={finishTutorial} />
+        </View>
+      ) : (
+        <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <Text style={styles.title}>{t.onboardingTitle}</Text>
@@ -210,12 +232,14 @@ export default function OnboardingModal({ bulkAddItems }: Props) {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+        </View>
+      )}
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  tutorialBackground: { flex: 1, backgroundColor: AppColors.background },
   overlay: { flex: 1, backgroundColor: 'rgba(29,44,34,0.28)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: AppColors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28, width: '100%', maxWidth: 640, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 12, height: '92%' },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: AppColors.border, alignSelf: 'center', marginBottom: 22 },
