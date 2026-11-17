@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColors, AppStyles } from '@/constants/theme';
@@ -9,6 +9,8 @@ import { useI18n } from '@/store/i18n';
 import RecipeFacts from '@/components/RecipeFacts';
 import RecipePlanner from '@/components/RecipePlanner';
 import { planningCopy } from '@/store/planning-copy';
+import { recipeIdentity, useRecipeBook } from '@/store/recipe-book';
+import { recipeBookCopy } from '@/store/recipe-book-copy';
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -20,13 +22,35 @@ interface RecipeDetailProps {
 
 export default function RecipeDetail({ recipe, initialServings = 1, onClose, onOpenCalendar, onRemove }: RecipeDetailProps) {
   const { t, language } = useI18n();
+  const { saved, ready, loadError, toggleMark } = useRecipeBook();
+  const book = recipeBookCopy[language];
   const [servings, setServings] = useState(initialServings);
   const [planning, setPlanning] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState(false);
+  const [markSaving, setMarkSaving] = useState(false);
+  const [markError, setMarkError] = useState(false);
   const copy = planningCopy[language];
   const normalizedRecipe = normalizeStepShares(recipe);
+  const identity = recipeIdentity(recipe);
+  const entry = saved.find(item => recipeIdentity(item.recipe) === identity);
+  const favorite = !!entry?.favoriteAt;
+  const cooked = !!entry?.cookedAt;
+  const sourceUrl = recipe.wikiPage && 'https://en.wikibooks.org/wiki/Cookbook:' + encodeURIComponent(recipe.wikiPage);
+
+  async function mark(field: 'favoriteAt' | 'cookedAt') {
+    if (!ready || markSaving) return;
+    setMarkSaving(true);
+    setMarkError(false);
+    try {
+      await toggleMark(recipe, servings, field);
+    } catch {
+      setMarkError(true);
+    } finally {
+      setMarkSaving(false);
+    }
+  }
 
   async function remove() {
     if (!onRemove || removing) return;
@@ -46,6 +70,15 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
       <SafeAreaView style={AppStyles.screen}>
         <View style={styles.header}>
           <Text style={styles.title} accessibilityRole="header">{recipe.name}</Text>
+          <TouchableOpacity
+            style={[AppStyles.iconButton, favorite && styles.marked]}
+            accessibilityRole="button"
+            accessibilityLabel={favorite ? book.removeFavorite : book.addFavorite}
+            accessibilityState={{ selected: favorite, disabled: !ready || markSaving }}
+            disabled={!ready || markSaving}
+            onPress={() => mark('favoriteAt')}>
+            <Ionicons name={favorite ? 'star' : 'star-outline'} size={22} color={AppColors.avocadoText} />
+          </TouchableOpacity>
           <TouchableOpacity style={AppStyles.iconButton} accessibilityRole="button" accessibilityLabel={t.recipeClose} disabled={removing} onPress={onClose}>
             <Ionicons name="close" size={22} color={AppColors.text} />
           </TouchableOpacity>
@@ -53,6 +86,18 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
         <KeyboardAvoidingView style={styles.scroll} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={styles.description}>{recipe.description}</Text>
+            {sourceUrl && (
+              <View style={styles.sources}>
+                <Text accessibilityRole="link" style={styles.source}
+                  onPress={() => void Linking.openURL(sourceUrl).catch(() => {})}>
+                  {book.source}
+                </Text>
+                <Text accessibilityRole="link" style={styles.source}
+                  onPress={() => void Linking.openURL('https://creativecommons.org/licenses/by-sa/4.0/').catch(() => {})}>
+                  CC BY-SA 4.0
+                </Text>
+              </View>
+            )}
             <RecipeFacts recipe={recipe} />
             <View style={styles.servings}>
               <Text style={styles.servingsText} accessibilityLiveRegion="polite">{t.recipeServings(servings)}</Text>
@@ -63,6 +108,18 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
                 <Ionicons name="add" size={22} color={servings === 12 ? AppColors.border : AppColors.primaryDark} />
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={[AppStyles.button, styles.cooked, cooked && styles.marked]}
+              accessibilityRole="checkbox"
+              accessibilityLabel={book.markCooked}
+              accessibilityState={{ checked: cooked, disabled: !ready || markSaving }}
+              aria-checked={cooked}
+              disabled={!ready || markSaving}
+              onPress={() => mark('cookedAt')}>
+              <Ionicons name={cooked ? 'checkmark-circle' : 'checkmark-circle-outline'} size={20} color={AppColors.avocadoText} />
+              <Text style={AppStyles.buttonText}>{book.markCooked}</Text>
+            </TouchableOpacity>
+            {(loadError || markError) && <Text accessibilityRole="alert" style={styles.removeText}>{loadError ? book.readError : t.saveError}</Text>}
             {onOpenCalendar && (planning ? (
               <RecipePlanner recipe={recipe} servings={servings} onOpenCalendar={onOpenCalendar} onCancel={() => setPlanning(false)} />
             ) : (
@@ -109,13 +166,17 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  header: { flexDirection: 'row', gap: 16, alignItems: 'center', padding: 24 },
+  header: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 24 },
   title: { flex: 1, fontSize: 24, lineHeight: 30, fontWeight: '600', color: AppColors.text },
   content: { paddingHorizontal: 24, paddingBottom: 32 },
   description: { fontSize: 14, lineHeight: 22, color: AppColors.textLight, marginBottom: 16 },
   servings: { ...AppStyles.card, backgroundColor: AppColors.limeTint, borderColor: AppColors.limeBorder, flexDirection: 'row', gap: 8, alignItems: 'center', padding: 12 },
   servingsText: { flex: 1, fontSize: 16, fontWeight: '600', color: AppColors.text },
   plan: { marginTop: 16, flexDirection: 'row', gap: 8 },
+  marked: { backgroundColor: AppColors.avocado },
+  cooked: { alignSelf: 'flex-start', flexDirection: 'row', gap: 8, marginTop: 12, backgroundColor: AppColors.limeTint },
+  sources: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  source: { color: AppColors.primaryDark, fontSize: 13, textDecorationLine: 'underline', paddingVertical: 8 },
   removePanel: { ...AppStyles.card, padding: 12, marginTop: 12 },
   removeActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   removeButton: { backgroundColor: AppColors.expiredBg, marginTop: 4 },

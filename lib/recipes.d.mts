@@ -1,4 +1,5 @@
 export interface Recipe {
+  wikiPage?: string;
   name: string;
   description: string;
   totalMinutes: number;

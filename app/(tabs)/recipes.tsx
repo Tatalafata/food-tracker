@@ -25,6 +25,8 @@ import { dietaryPrompt, useDietaryPreferences } from '@/store/dietary-preference
 import { useI18n } from '@/store/i18n';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 import { planningCopy } from '@/store/planning-copy';
+import { useRecipeBook } from '@/store/recipe-book';
+import { recipeBookCopy } from '@/store/recipe-book-copy';
 
 
 type RecipeMode = 'quick' | 'custom';
@@ -132,12 +134,14 @@ export default function RecipesScreen() {
   const { items } = usePantry();
   const { language, t } = useI18n();
   const { custom, defaultIds, ready: dietaryReady } = useDietaryPreferences();
+  const { recordSearch } = useRecipeBook();
   const copy = planningCopy[language];
 
   const [mode, setMode] = useState<RecipeMode>('quick');
   const [result, setResult] = useState<{ recipes: Recipe[]; dietLine: string } | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
+  const [historySaveError, setHistorySaveError] = useState(false);
   const [error, setError] = useState<RecipeError | null>(null);
   const errorMessages: Record<RecipeError, string> = {
     unavailable: t.recipesUnavailable, emptyPantry: copy.usableIngredients,
@@ -178,6 +182,7 @@ export default function RecipesScreen() {
   function clearResults() {
     setResult(null);
     setError(null);
+    setHistorySaveError(false);
   }
 
   function toggleCookingPreference(key: keyof RecipePreferences) {
@@ -194,9 +199,8 @@ export default function RecipesScreen() {
 
   function switchMode(next: RecipeMode) {
     if (loading) return;
-    setError(null);
+    clearResults();
     setMode(next);
-    setResult(null);
     if (next === 'custom' && selectedIds.size === 0 && sortedItems.length > 0) {
       // Pre-select all items on first switch to custom
       setSelectedIds(new Set(sortedItems.map((i) => i.id)));
@@ -307,10 +311,12 @@ Return complete recipes for one person with quantified ingredients and ordered p
     }
 
     setLoading(true);
+    setHistorySaveError(false);
     setResult(null);
     try {
       const suggestions = await fetchRecipes(prompt, preferences);
       setResult({ recipes: suggestions, dietLine });
+      await recordSearch(suggestions).catch(() => setHistorySaveError(true));
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
       setError(Object.prototype.hasOwnProperty.call(errorMessages, reason) ? reason as RecipeError : 'network');
@@ -333,7 +339,15 @@ Return complete recipes for one person with quantified ingredients and ordered p
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
-      <ScreenHeader title={t.recipesTitle} subtitle={t.recipesSubtitle} />
+      <ScreenHeader title={t.recipesTitle} subtitle={t.recipesSubtitle} action={(
+        <TouchableOpacity
+          style={[AppStyles.iconButton, styles.bookButton]}
+          accessibilityRole="button"
+          accessibilityLabel={recipeBookCopy[language].title}
+          onPress={() => router.push('/recipe-book')}>
+          <Ionicons name="book-outline" size={23} color={AppColors.avocadoText} />
+        </TouchableOpacity>
+      )} />
 
       {/* Mode toggle */}
       <View style={styles.toggleRow}>
@@ -524,6 +538,9 @@ Return complete recipes for one person with quantified ingredients and ordered p
           )}
 
           {!loading && recipes.length > 0 && <Text style={styles.sectionTitle2} accessibilityRole="header">{t.recipesResultCount(recipes.length)}</Text>}
+          {historySaveError && fetched && (
+            <Text accessibilityRole="alert" style={styles.noticeText}>{recipeBookCopy[language].historySaveError}</Text>
+          )}
           {!loading && recipes.map((recipe, idx) => (
             <RecipeCard key={idx} recipe={recipe} index={idx} keyIngredientsLabel={t.recipeOpen} onPress={() => setSelectedRecipe(recipe)} />
           ))}
@@ -553,6 +570,7 @@ Return complete recipes for one person with quantified ingredients and ordered p
 }
 
 const styles = StyleSheet.create({
+  bookButton: { borderRadius: 24 },
   toggleRow: { flexDirection: 'row', marginHorizontal: 24, backgroundColor: AppColors.surfaceTint, borderRadius: 18, padding: 4 },
   toggleBtn: { flex: 1, minHeight: 48, paddingVertical: 12, paddingHorizontal: 8, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   toggleBtnActive: { backgroundColor: AppColors.limeTint },

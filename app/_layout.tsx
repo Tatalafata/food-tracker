@@ -9,6 +9,7 @@ import { DietaryPreferencesProvider } from '@/store/dietary-preferences';
 import { I18nProvider } from '@/store/i18n';
 import { NotificationPrefsProvider } from '@/store/notifications';
 import { PantryProvider } from '@/store/pantry';
+import { RecipeBookProvider } from '@/store/recipe-book';
 import { RecipePlansProvider } from '@/store/recipe-plans';
 
 Notifications.setNotificationHandler({
@@ -32,14 +33,17 @@ export default function RootLayout() {
         <PantryProvider>
           <RecipePlansProvider>
             <DietaryPreferencesProvider>
-              <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: AppColors.background, primary: AppColors.primaryDark } }}>
-                <Stack>
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="add-product" options={{ presentation: 'modal', headerShown: false }} />
-                  <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                </Stack>
-                <StatusBar style="dark" />
-              </ThemeProvider>
+              <RecipeBookProvider>
+                <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: AppColors.background, primary: AppColors.primaryDark } }}>
+                  <Stack>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="add-product" options={{ presentation: 'modal', headerShown: false }} />
+                    <Stack.Screen name="recipe-book" options={{ headerShown: false }} />
+                    <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                  </Stack>
+                  <StatusBar style="dark" />
+                </ThemeProvider>
+              </RecipeBookProvider>
             </DietaryPreferencesProvider>
           </RecipePlansProvider>
         </PantryProvider>
