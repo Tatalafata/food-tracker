@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,10 +7,12 @@ import { AppColors, AppStyles } from '@/constants/theme';
 import { Recipe, scaledAmount, formatStep, normalizeStepShares } from '@/lib/recipes.mjs';
 import { useI18n } from '@/store/i18n';
 import RecipeFacts from '@/components/RecipeFacts';
+import { TimerDock } from '@/components/CookingTimers';
 import RecipePlanner from '@/components/RecipePlanner';
 import { planningCopy } from '@/store/planning-copy';
 import { recipeIdentity, useRecipeBook } from '@/store/recipe-book';
 import { recipeBookCopy } from '@/store/recipe-book-copy';
+import { useTimers } from '@/store/timers';
 
 interface RecipeDetailProps {
   recipe: Recipe;
@@ -23,6 +25,7 @@ interface RecipeDetailProps {
 export default function RecipeDetail({ recipe, initialServings = 1, onClose, onOpenCalendar, onRemove }: RecipeDetailProps) {
   const { t, language } = useI18n();
   const { saved, ready, loadError, toggleMark } = useRecipeBook();
+  const { setDockInDetail } = useTimers();
   const book = recipeBookCopy[language];
   const [servings, setServings] = useState(initialServings);
   const [planning, setPlanning] = useState(false);
@@ -38,6 +41,11 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
   const favorite = !!entry?.favoriteAt;
   const cooked = !!entry?.cookedAt;
   const sourceUrl = recipe.wikiPage && 'https://en.wikibooks.org/wiki/Cookbook:' + encodeURIComponent(recipe.wikiPage);
+
+  useEffect(() => {
+    setDockInDetail(true);
+    return () => setDockInDetail(false);
+  }, [setDockInDetail]);
 
   async function mark(field: 'favoriteAt' | 'cookedAt') {
     if (!ready || markSaving) return;
@@ -159,6 +167,7 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
             ))}
           </ScrollView>
         </KeyboardAvoidingView>
+        <TimerDock onLeaveDetail={onClose} />
       </SafeAreaView>
     </Modal>
   );

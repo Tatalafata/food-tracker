@@ -11,7 +11,7 @@ export type Reminder = {
   trigger: Notifications.DateTriggerInput | Notifications.DailyTriggerInput;
 };
 
-type Scope = 'expiry' | 'recipe' | 'summary';
+type Scope = 'expiry' | 'recipe' | 'summary' | 'timer';
 
 export async function prepareReminderChannel() {
   if (Platform.OS === 'android') {
@@ -62,6 +62,7 @@ export function useScheduledReminders(
           content: {
             title: reminder.title,
             body: reminder.body,
+            ...(scope === 'timer' ? { sound: 'default' } : {}),
             data: { reminderScope: scope, reminderKey: reminder.key },
           },
           trigger: { ...reminder.trigger, channelId: REMINDER_CHANNEL },

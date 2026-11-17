@@ -1,15 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
-import React, { useMemo } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ExpiryBadge from '@/components/ExpiryBadge';
+import { HomeTimers } from '@/components/CookingTimers';
 import OnboardingModal from '@/components/OnboardingModal';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
-import { getDaysUntilExpiry, getExpiryStatus, usePantry } from '@/store/pantry';
+import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 
 function Stat({ label, count, color }: { label: string; count: number; color: string }) {
   return (
@@ -26,6 +27,11 @@ function Stat({ label, count, color }: { label: string; count: number; color: st
 export default function HomeScreen() {
   const { items, loading, bulkAddItems } = usePantry();
   const { t } = useI18n();
+  const { timers } = useLocalSearchParams<{ timers?: string }>();
+  const list = useRef<FlatList<PantryItem>>(null);
+  useEffect(() => {
+    if (timers && !loading) list.current?.scrollToOffset({ offset: 0, animated: true });
+  }, [loading, timers]);
   const { expiredCount, warnCount, goodCount, urgentItems } = useMemo(() => {
     let expiredCount = 0, warnCount = 0, goodCount = 0;
     items.forEach((item) => {
@@ -48,13 +54,16 @@ export default function HomeScreen() {
     <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
       <OnboardingModal bulkAddItems={bulkAddItems} />
       <FlatList
+        ref={list}
         data={urgentItems}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <>
             <ScreenHeader title="ChefSuggest" subtitle={t.homeSubtitle(items.length)} icon="leaf-outline" />
+            <HomeTimers />
             <View style={styles.overview}>
               <View style={styles.overviewHeading}>
                 <Text style={styles.overviewTitle}>{t.pantryTitle}</Text>

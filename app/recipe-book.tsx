@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import InspirationCatalog from '@/components/InspirationCatalog';
 import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
 import { AppColors, AppStyles } from '@/constants/theme';
-import { InspirationFilter, inspirationRecipes } from '@/lib/inspiration';
+import { inspirationRecipes } from '@/lib/inspiration';
 import { Recipe } from '@/lib/recipes.mjs';
 import { useI18n } from '@/store/i18n';
 import { recipeIdentity, useRecipeBook } from '@/store/recipe-book';
@@ -15,7 +16,6 @@ import { recipeBookCopy } from '@/store/recipe-book-copy';
 
 type BookTab = 'favorites' | 'history' | 'inspiration';
 const tabs: BookTab[] = ['favorites', 'history', 'inspiration'];
-const filters: InspirationFilter[] = ['all', 'savory', 'sweet', 'vegan'];
 
 interface RecipeRow {
   recipe: Recipe;
@@ -34,7 +34,6 @@ export default function RecipeBookScreen() {
   const { saved, history, ready, loadError } = useRecipeBook();
   const copy = recipeBookCopy[language];
   const [tab, setTab] = useState<BookTab>('favorites');
-  const [filter, setFilter] = useState<InspirationFilter>('all');
   const [showCooked, setShowCooked] = useState(false);
   const [opened, setOpened] = useState<RecipeRow | null>(null);
   const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });
@@ -46,9 +45,7 @@ export default function RecipeBookScreen() {
   const mark = tab === 'favorites' ? 'favoriteAt' : 'cookedAt';
   const marked = saved.filter(item => item[mark])
     .sort((a, b) => (b[mark] ?? '').localeCompare(a[mark] ?? ''));
-  const sections: BookSection[] = tab === 'inspiration'
-    ? [{ key: filter, title: '', data: inspirationRecipes(language, filter).map(recipe => ({ recipe })) }]
-    : tab === 'history' && !showCooked
+  const sections: BookSection[] = tab === 'history' && !showCooked
       ? history.map(search => ({
         key: search.id, title: formatDate(search.date),
         data: search.recipes.map(recipe => ({ recipe })),
@@ -87,28 +84,24 @@ export default function RecipeBookScreen() {
       <View style={styles.tabs} accessibilityRole="tablist">
         {tabs.map(item => choice(copy[item], item === tab, () => setTab(item), true))}
       </View>
-      {tab === 'inspiration' && (
-        <View style={styles.filters}>
-          {filters.map(item => choice(copy[item], item === filter, () => setFilter(item)))}
-        </View>
-      )}
       {tab === 'history' && (
         <View style={styles.filters}>
           {choice(copy.searches, !showCooked, () => setShowCooked(false))}
           {choice(copy.cooked, showCooked, () => setShowCooked(true))}
         </View>
       )}
-      {loading ? <ActivityIndicator color={AppColors.primaryDark} style={styles.status} /> : (
+      {tab === 'inspiration' ? <InspirationCatalog onOpenRecipe={recipe => setOpened({ recipe })} />
+        : loading ? <ActivityIndicator color={AppColors.primaryDark} style={styles.status} /> : (
         <SectionList
-          key={`${tab}/${filter}/${showCooked}`}
+          key={`${tab}/${showCooked}`}
           contentContainerStyle={styles.list}
           sections={sections.filter(section => section.data.length > 0)}
           stickySectionHeadersEnabled={false}
           keyExtractor={row => recipeIdentity(row.recipe)}
-          ListHeaderComponent={tab !== 'inspiration' && loadError
+          ListHeaderComponent={loadError
             ? <Text accessibilityRole="alert" style={styles.status}>{copy.readError}</Text>
             : null}
-          ListEmptyComponent={tab !== 'inspiration' && !loadError
+          ListEmptyComponent={!loadError
             ? <Text style={styles.status}>{emptyText}</Text>
             : null}
           renderSectionHeader={({ section }) => section.title ? (
