@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ExpiryBadge from '@/components/ExpiryBadge';
 import { HomeTimers } from '@/components/CookingTimers';
+import KitchenLink from '@/components/KitchenLink';
 import OnboardingModal from '@/components/OnboardingModal';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
@@ -63,6 +64,7 @@ export default function HomeScreen() {
         ListHeaderComponent={
           <>
             <ScreenHeader title="ChefSuggest" subtitle={t.homeSubtitle(items.length)} icon="leaf-outline" />
+            <View style={styles.shopping}><KitchenLink kind="shopping" /></View>
             <HomeTimers />
             <View style={styles.overview}>
               <View style={styles.overviewHeading}>
@@ -116,6 +118,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center' },
   list: { paddingBottom: 28 },
+  shopping: { marginHorizontal: 24, marginBottom: 16 },
   overview: { backgroundColor: AppColors.avocado, borderRadius: 26, marginHorizontal: 24, padding: 20 },
   overviewHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   overviewTitle: { fontSize: 16, fontWeight: '500', color: AppColors.avocadoText },

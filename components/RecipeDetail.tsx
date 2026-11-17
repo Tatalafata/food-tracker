@@ -1,11 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppColors, AppStyles } from '@/constants/theme';
 import { Recipe, scaledAmount, formatStep, normalizeStepShares } from '@/lib/recipes.mjs';
+import { missingIngredients } from '@/lib/shopping';
 import { useI18n } from '@/store/i18n';
+import { useKitchen } from '@/store/kitchen';
+import { kitchenCopy } from '@/store/kitchen-copy';
+import { getExpiryStatus, usePantry } from '@/store/pantry';
 import RecipeFacts from '@/components/RecipeFacts';
 import { TimerDock } from '@/components/CookingTimers';
 import RecipePlanner from '@/components/RecipePlanner';
@@ -25,6 +30,8 @@ interface RecipeDetailProps {
 export default function RecipeDetail({ recipe, initialServings = 1, onClose, onOpenCalendar, onRemove }: RecipeDetailProps) {
   const { t, language } = useI18n();
   const { saved, ready, loadError, toggleMark } = useRecipeBook();
+  const { items: pantry, loading: pantryLoading, loadError: pantryError } = usePantry();
+  const { addToShopping, loading: kitchenLoading, loadError: kitchenError } = useKitchen();
   const { setDockInDetail } = useTimers();
   const book = recipeBookCopy[language];
   const [servings, setServings] = useState(initialServings);
@@ -34,7 +41,11 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
   const [removeError, setRemoveError] = useState(false);
   const [markSaving, setMarkSaving] = useState(false);
   const [markError, setMarkError] = useState(false);
+  const [addingToShopping, setAddingToShopping] = useState(false);
+  const [shoppingFeedback, setShoppingFeedback] = useState<{ text: string; canOpen?: boolean; error?: boolean } | null>(null);
   const copy = planningCopy[language];
+  const shopping = kitchenCopy[language];
+  const shoppingDisabled = pantryLoading || kitchenLoading || addingToShopping;
   const normalizedRecipe = normalizeStepShares(recipe);
   const identity = recipeIdentity(recipe);
   const entry = saved.find(item => recipeIdentity(item.recipe) === identity);
@@ -70,6 +81,30 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
       setRemoveError(true);
     } finally {
       setRemoving(false);
+    }
+  }
+
+  async function addMissing() {
+    if (shoppingDisabled) return;
+    if (pantryError || kitchenError) {
+      setShoppingFeedback({ text: shopping.loadError, error: true });
+      return;
+    }
+    const available = pantry.filter(item => getExpiryStatus(item.expiryDate) !== 'expired').map(item => item.name);
+    const missing = missingIngredients(recipe.ingredients, available, servings, language, t.recipeToTaste);
+    if (!missing.length) {
+      setShoppingFeedback({ text: shopping.allAvailable });
+      return;
+    }
+    setAddingToShopping(true);
+    setShoppingFeedback(null);
+    try {
+      const added = await addToShopping(missing);
+      setShoppingFeedback({ text: added > 0 ? shopping.added(added) : shopping.alreadyListed, canOpen: true });
+    } catch {
+      setShoppingFeedback({ text: t.saveError, error: true });
+    } finally {
+      setAddingToShopping(false);
     }
   }
 
@@ -109,10 +144,10 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
             <RecipeFacts recipe={recipe} />
             <View style={styles.servings}>
               <Text style={styles.servingsText} accessibilityLiveRegion="polite">{t.recipeServings(servings)}</Text>
-              <TouchableOpacity style={AppStyles.iconButton} disabled={servings === 1} accessibilityRole="button" accessibilityLabel={t.recipeFewer} onPress={() => setServings(n => n - 1)}>
+              <TouchableOpacity style={AppStyles.iconButton} disabled={servings === 1 || addingToShopping} accessibilityRole="button" accessibilityLabel={t.recipeFewer} onPress={() => { setShoppingFeedback(null); setServings(n => n - 1); }}>
                 <Ionicons name="remove" size={22} color={servings === 1 ? AppColors.border : AppColors.primaryDark} />
               </TouchableOpacity>
-              <TouchableOpacity style={AppStyles.iconButton} disabled={servings === 12} accessibilityRole="button" accessibilityLabel={t.recipeMore} onPress={() => setServings(n => n + 1)}>
+              <TouchableOpacity style={AppStyles.iconButton} disabled={servings === 12 || addingToShopping} accessibilityRole="button" accessibilityLabel={t.recipeMore} onPress={() => { setShoppingFeedback(null); setServings(n => n + 1); }}>
                 <Ionicons name="add" size={22} color={servings === 12 ? AppColors.border : AppColors.primaryDark} />
               </TouchableOpacity>
             </View>
@@ -137,6 +172,23 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
               </TouchableOpacity>
             ))}
             <Text style={styles.section} accessibilityRole="header">{t.recipeIngredients}</Text>
+            <View style={styles.shopping}>
+              <TouchableOpacity style={[AppStyles.button, styles.shoppingButton, shoppingDisabled && styles.disabled]}
+                accessibilityRole="button" accessibilityLabel={shopping.addMissing} disabled={shoppingDisabled} onPress={addMissing}>
+                <Ionicons name="cart-outline" size={21} color={AppColors.avocadoText} />
+                <Text style={styles.shoppingLabel}>{shopping.addMissing}</Text>
+              </TouchableOpacity>
+              {shoppingFeedback && (
+                <Text accessibilityRole={shoppingFeedback.error ? 'alert' : undefined} accessibilityLiveRegion="polite"
+                  style={shoppingFeedback.error ? styles.removeText : styles.shoppingHint}>{shoppingFeedback.text}</Text>
+              )}
+              {shoppingFeedback?.canOpen && (
+                <TouchableOpacity accessibilityRole="button" accessibilityLabel={shopping.viewList} style={styles.shoppingLink}
+                  onPress={() => { onClose(); router.push('/shopping-list'); }}>
+                  <Text style={styles.shoppingLinkText}>{shopping.viewList}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={AppStyles.card}>
               {recipe.ingredients.map((ingredient, index) => {
                 const amount = scaledAmount(ingredient.amount, servings);
@@ -191,6 +243,13 @@ const styles = StyleSheet.create({
   removeButton: { backgroundColor: AppColors.expiredBg, marginTop: 4 },
   removeText: { color: AppColors.expired },
   section: { fontSize: 20, fontWeight: '600', color: AppColors.text, marginTop: 28, marginBottom: 16 },
+  shopping: { gap: 8, marginBottom: 12 },
+  shoppingButton: { flexDirection: 'row', gap: 8, backgroundColor: AppColors.limeTint, paddingHorizontal: 12 },
+  shoppingLabel: { ...AppStyles.buttonText, flexShrink: 1, textAlign: 'center' },
+  shoppingHint: { color: AppColors.textLight, lineHeight: 20 },
+  shoppingLink: { alignSelf: 'flex-start', justifyContent: 'center', minHeight: 48 },
+  shoppingLinkText: { color: AppColors.primaryDark, fontWeight: '600', textDecorationLine: 'underline' },
+  disabled: { opacity: 0.5 },
   ingredient: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: AppColors.border },
   ingredientName: { flexGrow: 1, flexShrink: 1, fontSize: 15, lineHeight: 22, color: AppColors.text },
   quantity: { fontSize: 15, lineHeight: 22, fontWeight: '600', color: AppColors.primaryDark },

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DietaryChoices from '@/components/DietaryChoices';
 import InspirationPhotoCredits from '@/components/InspirationPhotoCredits';
+import KitchenLink from '@/components/KitchenLink';
 import ReminderAccess from '@/components/ReminderAccess';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
@@ -68,6 +69,8 @@ export default function SettingsScreen() {
 
       <ScrollView contentContainerStyle={[styles.content, !timersHidden && timers.length > 0 && styles.timerSpace]}
         showsVerticalScrollIndicator={false}>
+
+        <View style={styles.section}><KitchenLink kind="equipment" /></View>
 
         <View style={styles.section}>
           <SectionHeader title={t.settingsNotifications} />

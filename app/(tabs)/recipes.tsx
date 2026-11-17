@@ -19,10 +19,12 @@ import DietaryChoices from '@/components/DietaryChoices';
 import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
 import { isRecipeBatch, matchesRecipePreferences, Recipe, RecipePreferences, RECIPE_COUNT } from '@/lib/recipes.mjs';
+import { equipmentPrompt } from '@/lib/kitchen-equipment';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { dietaryPrompt, useDietaryPreferences } from '@/store/dietary-preferences';
 import { useI18n } from '@/store/i18n';
+import { useKitchen } from '@/store/kitchen';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 import { planningCopy } from '@/store/planning-copy';
 import { useRecipeBook } from '@/store/recipe-book';
@@ -134,11 +136,12 @@ export default function RecipesScreen() {
   const { items } = usePantry();
   const { language, t } = useI18n();
   const { custom, defaultIds, ready: dietaryReady } = useDietaryPreferences();
+  const { equipment, loading: kitchenLoading } = useKitchen();
   const { recordSearch } = useRecipeBook();
   const copy = planningCopy[language];
 
   const [mode, setMode] = useState<RecipeMode>('quick');
-  const [result, setResult] = useState<{ recipes: Recipe[]; dietLine: string } | null>(null);
+  const [result, setResult] = useState<{ recipes: Recipe[]; dietLine: string; equipmentLine: string } | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
   const [historySaveError, setHistorySaveError] = useState(false);
@@ -161,10 +164,11 @@ export default function RecipesScreen() {
 
   const selectedDiets = dietSelection ?? new Set(defaultIds);
   const dietLine = dietaryPrompt(selectedDiets, custom);
-  const visibleResult = result?.dietLine === dietLine ? result : null;
+  const equipmentLine = equipmentPrompt(equipment);
+  const visibleResult = result?.dietLine === dietLine && result.equipmentLine === equipmentLine ? result : null;
   const fetched = visibleResult !== null;
   const recipes = visibleResult?.recipes ?? [];
-  const generationDisabled = loading || !dietaryReady;
+  const generationDisabled = loading || !dietaryReady || kitchenLoading;
 
   useFocusEffect(useCallback(() => () => setDietSelection(null), []));
 
@@ -314,8 +318,8 @@ Return complete recipes for one person with quantified ingredients and ordered p
     setHistorySaveError(false);
     setResult(null);
     try {
-      const suggestions = await fetchRecipes(prompt, preferences);
-      setResult({ recipes: suggestions, dietLine });
+      const suggestions = await fetchRecipes(prompt + equipmentLine, preferences);
+      setResult({ recipes: suggestions, dietLine, equipmentLine });
       await recordSearch(suggestions).catch(() => setHistorySaveError(true));
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';

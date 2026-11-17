@@ -38,6 +38,7 @@ interface PantryContextType {
   removeItem: (id: string) => Promise<void>;
   removeExpiredItems: (ids: readonly string[]) => Promise<void>;
   loading: boolean;
+  loadError: boolean;
 }
 
 const PantryContext = createContext<PantryContextType | null>(null);
@@ -45,6 +46,7 @@ const PantryContext = createContext<PantryContextType | null>(null);
 export function PantryProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<PantryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const { prefs, ready, permissionReady, allowed } = useNotificationPrefs();
   const { t, language } = useI18n();
   const latest = useRef<PantryItem[]>([]);
@@ -68,6 +70,7 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
         }
         setItems(latest.current);
       } catch (e) {
+        setLoadError(true);
         console.error('Failed to load pantry', e);
       } finally {
         setLoading(false);
@@ -145,7 +148,7 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
   }, [saveItems]);
 
   return (
-    <PantryContext.Provider value={{ items, addItem, updateItem, bulkAddItems, removeItem, removeExpiredItems, loading }}>
+    <PantryContext.Provider value={{ items, addItem, updateItem, bulkAddItems, removeItem, removeExpiredItems, loading, loadError }}>
       {children}
     </PantryContext.Provider>
   );
