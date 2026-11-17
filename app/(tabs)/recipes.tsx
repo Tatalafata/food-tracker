@@ -27,7 +27,6 @@ import { useI18n } from '@/store/i18n';
 import { useKitchen } from '@/store/kitchen';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 import { planningCopy } from '@/store/planning-copy';
-import { useRecipeBook } from '@/store/recipe-book';
 import { recipeBookCopy } from '@/store/recipe-book-copy';
 
 
@@ -137,14 +136,12 @@ export default function RecipesScreen() {
   const { language, t } = useI18n();
   const { custom, defaultIds, ready: dietaryReady } = useDietaryPreferences();
   const { equipment, loading: kitchenLoading } = useKitchen();
-  const { recordSearch } = useRecipeBook();
   const copy = planningCopy[language];
 
   const [mode, setMode] = useState<RecipeMode>('quick');
   const [result, setResult] = useState<{ recipes: Recipe[]; dietLine: string; equipmentLine: string } | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
-  const [historySaveError, setHistorySaveError] = useState(false);
   const [error, setError] = useState<RecipeError | null>(null);
   const errorMessages: Record<RecipeError, string> = {
     unavailable: t.recipesUnavailable, emptyPantry: copy.usableIngredients,
@@ -186,7 +183,6 @@ export default function RecipesScreen() {
   function clearResults() {
     setResult(null);
     setError(null);
-    setHistorySaveError(false);
   }
 
   function toggleCookingPreference(key: keyof RecipePreferences) {
@@ -315,12 +311,10 @@ Return complete recipes for one person with quantified ingredients and ordered p
     }
 
     setLoading(true);
-    setHistorySaveError(false);
     setResult(null);
     try {
       const suggestions = await fetchRecipes(prompt + equipmentLine, preferences);
       setResult({ recipes: suggestions, dietLine, equipmentLine });
-      await recordSearch(suggestions).catch(() => setHistorySaveError(true));
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
       setError(Object.prototype.hasOwnProperty.call(errorMessages, reason) ? reason as RecipeError : 'network');
@@ -542,9 +536,6 @@ Return complete recipes for one person with quantified ingredients and ordered p
           )}
 
           {!loading && recipes.length > 0 && <Text style={styles.sectionTitle2} accessibilityRole="header">{t.recipesResultCount(recipes.length)}</Text>}
-          {historySaveError && fetched && (
-            <Text accessibilityRole="alert" style={styles.noticeText}>{recipeBookCopy[language].historySaveError}</Text>
-          )}
           {!loading && recipes.map((recipe, idx) => (
             <RecipeCard key={idx} recipe={recipe} index={idx} keyIngredientsLabel={t.recipeOpen} onPress={() => setSelectedRecipe(recipe)} />
           ))}

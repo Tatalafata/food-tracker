@@ -4,19 +4,12 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { isRecipe, Recipe } from '@/lib/recipes.mjs';
 
 const SAVED_KEY = '@chefsuggest:recipe_book';
-const HISTORY_PREFIX = '@chefsuggest:recipe_history:';
 
 export interface SavedRecipe {
   recipe: Recipe;
   servings: number;
   favoriteAt?: string;
   cookedAt?: string;
-}
-
-interface RecipeSearch {
-  id: string;
-  date: string;
-  recipes: Recipe[];
 }
 
 export function recipeIdentity(recipe: Recipe) {
@@ -32,10 +25,8 @@ function validDate(value: unknown): value is string {
 
 interface RecipeBook {
   saved: SavedRecipe[];
-  history: RecipeSearch[];
   ready: boolean;
   loadError: boolean;
-  recordSearch: (recipes: Recipe[]) => Promise<void>;
   toggleMark: (recipe: Recipe, servings: number, mark: 'favoriteAt' | 'cookedAt') => Promise<void>;
 }
 
@@ -43,44 +34,22 @@ const RecipeBookContext = createContext<RecipeBook | null>(null);
 
 export function RecipeBookProvider({ children }: { children: ReactNode }) {
   const [saved, setSaved] = useState<SavedRecipe[]>([]);
-  const [history, setHistory] = useState<RecipeSearch[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const latestSaved = useRef<SavedRecipe[]>([]);
   const writes = useRef(Promise.resolve());
 
   useEffect(() => {
-    AsyncStorage.getAllKeys().then(async (keys) => {
-      const entries = await AsyncStorage.multiGet([SAVED_KEY, ...keys.filter(key => key.startsWith(HISTORY_PREFIX))]);
-      const data: SavedRecipe[] = entries[0][1] ? JSON.parse(entries[0][1]) : [];
+    AsyncStorage.getItem(SAVED_KEY).then(raw => {
+      const data: SavedRecipe[] = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(data)) throw new Error('Invalid saved recipes');
       latestSaved.current = data.filter(entry => isRecipe(entry?.recipe)
         && Number.isInteger(entry.servings) && entry.servings >= 1 && entry.servings <= 12
         && (validDate(entry.favoriteAt) || validDate(entry.cookedAt)));
       setSaved(latestSaved.current);
 
-      const stored = entries.slice(1).flatMap(([, json]) => {
-        if (!json) return [];
-        const entry: RecipeSearch = JSON.parse(json);
-        return typeof entry?.id === 'string' && validDate(entry.date)
-          && Array.isArray(entry.recipes) && entry.recipes.length > 0 && entry.recipes.every(isRecipe) ? [entry] : [];
-      });
-      setHistory(current => {
-        const searches = new Map([...stored, ...current].map(entry => [entry.id, entry]));
-        return [...searches.values()].sort((a, b) => b.date.localeCompare(a.date));
-      });
       setReady(true);
     }).catch(() => setLoadError(true));
-  }, []);
-
-  const recordSearch = useCallback(async (recipes: Recipe[]) => {
-    const entry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      date: new Date().toISOString(),
-      recipes,
-    };
-    await AsyncStorage.setItem(HISTORY_PREFIX + entry.id, JSON.stringify(entry));
-    setHistory(current => current.some(search => search.id === entry.id) ? current : [entry, ...current]);
   }, []);
 
   const toggleMark: RecipeBook['toggleMark'] = useCallback((recipe, servings, mark) => {
@@ -103,7 +72,7 @@ export function RecipeBookProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <RecipeBookContext.Provider value={{ saved, history, ready, loadError, recordSearch, toggleMark }}>
+    <RecipeBookContext.Provider value={{ saved, ready, loadError, toggleMark }}>
       {children}
     </RecipeBookContext.Provider>
   );

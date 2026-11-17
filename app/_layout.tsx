@@ -48,6 +48,7 @@ export default function RootLayout() {
                           <Stack.Screen name="recipe-book" options={{ headerShown: false }} />
                           <Stack.Screen name="shopping-list" options={{ headerShown: false }} />
                           <Stack.Screen name="kitchen-equipment" options={{ headerShown: false }} />
+                          <Stack.Screen name="feedback" options={{ headerShown: false }} />
                           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                         </Stack>
                         <TimerDock />

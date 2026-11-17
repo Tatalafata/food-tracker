@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
@@ -11,6 +12,7 @@ import ReminderAccess from '@/components/ReminderAccess';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useDietaryPreferences } from '@/store/dietary-preferences';
+import { feedbackCopy } from '@/store/feedback-copy';
 import { Language, LANGUAGE_OPTIONS, useI18n } from '@/store/i18n';
 import { EXPIRY_DAYS, ExpiryDay, useNotificationPrefs } from '@/store/notifications';
 import { planningCopy } from '@/store/planning-copy';
@@ -49,6 +51,7 @@ export default function SettingsScreen() {
   const [saveError, setSaveError] = useState(false);
   const [dietSaveError, setDietSaveError] = useState(false);
   const copy = planningCopy[language];
+  const feedback = feedbackCopy[language];
 
   function save(update: Parameters<typeof updatePrefs>[0]) {
     setSaveError(false);
@@ -70,7 +73,20 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={[styles.content, !timersHidden && timers.length > 0 && styles.timerSpace]}
         showsVerticalScrollIndicator={false}>
 
-        <View style={styles.section}><KitchenLink kind="equipment" /></View>
+        <View style={[styles.section, styles.shortcuts]}>
+          <KitchenLink kind="equipment" />
+          <TouchableOpacity style={styles.feedbackLink} accessibilityRole="button" accessibilityLabel={feedback.title}
+            onPress={() => router.push('/feedback')}>
+            <View style={AppStyles.iconButton}>
+              <Ionicons name="chatbubble-ellipses-outline" size={22} color={AppColors.avocadoText} />
+            </View>
+            <View style={styles.rowInfo}>
+              <Text style={styles.feedbackTitle}>{feedback.title}</Text>
+              <Text style={styles.rowSubtitle}>{feedback.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={19} color={AppColors.primaryDark} />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.section}>
           <SectionHeader title={t.settingsNotifications} />
@@ -166,6 +182,9 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 24, paddingBottom: 32 },
   timerSpace: { paddingBottom: 140 },
   section: { marginBottom: 32 },
+  shortcuts: { gap: 8 },
+  feedbackLink: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
+  feedbackTitle: { fontSize: 16, fontWeight: '600', color: AppColors.text },
   sectionLabel: { fontSize: 18, fontWeight: '600', color: AppColors.text, letterSpacing: -0.3, marginBottom: 10 },
   sectionSubtitle: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, marginBottom: 18 },
   card: { ...AppStyles.card, paddingHorizontal: 18, paddingVertical: 4 },
