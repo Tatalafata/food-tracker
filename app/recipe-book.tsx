@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,9 +31,10 @@ interface BookSection {
 
 export default function RecipeBookScreen() {
   const { language } = useI18n();
+  const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
   const { saved, history, ready, loadError } = useRecipeBook();
   const copy = recipeBookCopy[language];
-  const [tab, setTab] = useState<BookTab>('favorites');
+  const [tab, setTab] = useState<BookTab>(initialTab === 'inspiration' ? 'inspiration' : 'favorites');
   const [showCooked, setShowCooked] = useState(false);
   const [opened, setOpened] = useState<RecipeRow | null>(null);
   const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });

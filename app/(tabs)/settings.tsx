@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import DietaryChoices from '@/components/DietaryChoices';
+import InspirationPhotoCredits from '@/components/InspirationPhotoCredits';
 import ReminderAccess from '@/components/ReminderAccess';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
@@ -12,6 +13,7 @@ import { useDietaryPreferences } from '@/store/dietary-preferences';
 import { Language, LANGUAGE_OPTIONS, useI18n } from '@/store/i18n';
 import { EXPIRY_DAYS, ExpiryDay, useNotificationPrefs } from '@/store/notifications';
 import { planningCopy } from '@/store/planning-copy';
+import { useTimers } from '@/store/timers';
 
 function SectionHeader({ title }: { title: string }) {
   return <Text style={styles.sectionLabel}>{title}</Text>;
@@ -42,6 +44,7 @@ export default function SettingsScreen() {
   const { t, language, setLanguage } = useI18n();
   const { prefs, ready, updatePrefs } = useNotificationPrefs();
   const { defaultIds, toggleDefault } = useDietaryPreferences();
+  const { timers, hidden: timersHidden } = useTimers();
   const [saveError, setSaveError] = useState(false);
   const [dietSaveError, setDietSaveError] = useState(false);
   const copy = planningCopy[language];
@@ -63,7 +66,8 @@ export default function SettingsScreen() {
     <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
       <ScreenHeader title={t.settingsTitle} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, !timersHidden && timers.length > 0 && styles.timerSpace]}
+        showsVerticalScrollIndicator={false}>
 
         <View style={styles.section}>
           <SectionHeader title={t.settingsNotifications} />
@@ -149,6 +153,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <InspirationPhotoCredits />
       </ScrollView>
     </SafeAreaView>
   );
@@ -156,6 +161,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 24, paddingBottom: 32 },
+  timerSpace: { paddingBottom: 140 },
   section: { marginBottom: 32 },
   sectionLabel: { fontSize: 18, fontWeight: '600', color: AppColors.text, letterSpacing: -0.3, marginBottom: 10 },
   sectionSubtitle: { fontSize: 14, lineHeight: 21, color: AppColors.textLight, marginBottom: 18 },
