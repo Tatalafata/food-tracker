@@ -4,9 +4,11 @@ import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 're
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import DietaryChoices from '@/components/DietaryChoices';
 import ReminderAccess from '@/components/ReminderAccess';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
+import { useDietaryPreferences } from '@/store/dietary-preferences';
 import { Language, LANGUAGE_OPTIONS, useI18n } from '@/store/i18n';
 import { EXPIRY_DAYS, ExpiryDay, useNotificationPrefs } from '@/store/notifications';
 import { planningCopy } from '@/store/planning-copy';
@@ -39,7 +41,9 @@ function RowToggle({ label, subtitle, value, disabled, onValueChange }: {
 export default function SettingsScreen() {
   const { t, language, setLanguage } = useI18n();
   const { prefs, ready, updatePrefs } = useNotificationPrefs();
+  const { defaultIds, toggleDefault } = useDietaryPreferences();
   const [saveError, setSaveError] = useState(false);
+  const [dietSaveError, setDietSaveError] = useState(false);
   const copy = planningCopy[language];
 
   function save(update: Parameters<typeof updatePrefs>[0]) {
@@ -100,6 +104,19 @@ export default function SettingsScreen() {
               }))}
             />
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <DietaryChoices
+            title={t.dietary.defaults}
+            hint={t.dietary.defaultsHint}
+            selected={new Set(defaultIds)}
+            onToggle={(id) => {
+              setDietSaveError(false);
+              void toggleDefault(id).catch(() => setDietSaveError(true));
+            }}
+          />
+          {dietSaveError && <Text accessibilityRole="alert" style={styles.error}>{t.saveError}</Text>}
         </View>
 
         {/* ── Language ── */}

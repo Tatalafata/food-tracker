@@ -16,6 +16,7 @@ export interface PantryItem {
   name: string;
   barcode?: string;
   expiryDate?: string; // YYYY-MM-DD, undefined/empty = no expiry
+  notes?: string;
   addedDate: string;
 }
 
@@ -32,6 +33,7 @@ const MOCK_ITEMS: PantryItem[] = [
 interface PantryContextType {
   items: PantryItem[];
   addItem: (item: Omit<PantryItem, 'id' | 'addedDate'>) => Promise<void>;
+  updateItem: (id: string, changes: Pick<PantryItem, 'name' | 'expiryDate' | 'barcode' | 'notes'>) => Promise<void>;
   bulkAddItems: (items: Omit<PantryItem, 'id' | 'addedDate'>[]) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   removeExpiredItems: (ids: readonly string[]) => Promise<void>;
@@ -124,6 +126,11 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
     [saveItems],
   );
 
+  const updateItem: PantryContextType['updateItem'] = useCallback((id, changes) => saveItems(current => {
+    if (!current.some(item => item.id === id)) throw new Error('Missing pantry item');
+    return current.map(item => item.id === id ? { ...item, ...changes } : item);
+  }), [saveItems]);
+
   const removeItem = useCallback(
     async (id: string) => {
       await saveItems((current) => current.filter((i) => i.id !== id));
@@ -138,7 +145,7 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
   }, [saveItems]);
 
   return (
-    <PantryContext.Provider value={{ items, addItem, bulkAddItems, removeItem, removeExpiredItems, loading }}>
+    <PantryContext.Provider value={{ items, addItem, updateItem, bulkAddItems, removeItem, removeExpiredItems, loading }}>
       {children}
     </PantryContext.Provider>
   );

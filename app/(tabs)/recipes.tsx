@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,11 +15,13 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import DietaryChoices from '@/components/DietaryChoices';
 import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
 import { isRecipeBatch, matchesRecipePreferences, Recipe, RecipePreferences, RECIPE_COUNT } from '@/lib/recipes.mjs';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
+import { dietaryPrompt, useDietaryPreferences } from '@/store/dietary-preferences';
 import { useI18n } from '@/store/i18n';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
 import { planningCopy } from '@/store/planning-copy';
@@ -79,44 +81,6 @@ function ExpiryPill({ item }: { item: PantryItem }) {
   );
 }
 
-function DietaryToggles({
-  diets,
-  selectedDiets,
-  onToggle,
-  label,
-  disabled,
-}: {
-  diets: { key: string; label: string }[];
-  selectedDiets: Set<string>;
-  onToggle: (key: string) => void;
-  label: string;
-  disabled: boolean;
-}) {
-  return (
-    <View style={styles.dietSection}>
-      <Text style={styles.sectionTitle2}>{label}</Text>
-      <View style={styles.dietGrid}>
-        {diets.map((d) => {
-          const active = selectedDiets.has(d.key);
-          return (
-            <TouchableOpacity
-              key={d.key}
-              disabled={disabled}
-              style={[styles.dietChip, active && styles.dietChipActive]}
-              onPress={() => onToggle(d.key)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: active }}
-              aria-checked={active}
-              activeOpacity={0.7}>
-              <Text style={[styles.dietChipText, active && styles.dietChipTextActive]}>{d.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 function CookingPreferences({ preferences, onToggle, disabled }: { preferences: RecipePreferences; onToggle: (key: keyof RecipePreferences) => void; disabled: boolean }) {
   const { t } = useI18n();
   const options: { key: keyof RecipePreferences; label: string; icon: 'leaf-outline' | 'time-outline' }[] = [
@@ -167,13 +131,13 @@ function RecipeCard({ recipe, index, keyIngredientsLabel, onPress }: { recipe: R
 export default function RecipesScreen() {
   const { items } = usePantry();
   const { language, t } = useI18n();
+  const { custom, defaultIds, ready: dietaryReady } = useDietaryPreferences();
   const copy = planningCopy[language];
 
   const [mode, setMode] = useState<RecipeMode>('quick');
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [result, setResult] = useState<{ recipes: Recipe[]; dietLine: string } | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
   const [error, setError] = useState<RecipeError | null>(null);
   const errorMessages: Record<RecipeError, string> = {
     unavailable: t.recipesUnavailable, emptyPantry: copy.usableIngredients,
@@ -186,31 +150,25 @@ export default function RecipesScreen() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [extraIngredients, setExtraIngredients] = useState<string[]>([]);
   const [extraInput, setExtraInput] = useState('');
-  const [selectedDiets, setSelectedDiets] = useState<Set<string>>(new Set());
+  const [dietSelection, setDietSelection] = useState<Set<string> | null>(null);
   const [notes, setNotes] = useState('');
   const [preferences, setPreferences] = useState<RecipePreferences>({ easy: false, quick: false });
   const extraInputRef = useRef<TextInput>(null);
 
-  const DIETS: { key: string; label: string; promptLabel: string }[] = [
-    { key: 'vegetarian',  label: t.dietLabels.vegetarian,  promptLabel: 'Vegetarian' },
-    { key: 'vegan',       label: t.dietLabels.vegan,        promptLabel: 'Vegan' },
-    { key: 'pescatarian', label: t.dietLabels.pescatarian,  promptLabel: 'Pescatarian' },
-    { key: 'glutenFree',  label: t.dietLabels.glutenFree,   promptLabel: 'Gluten Free' },
-    { key: 'lactoseFree', label: t.dietLabels.lactoseFree,  promptLabel: 'Lactose Free' },
-    { key: 'dairyFree',   label: t.dietLabels.dairyFree,    promptLabel: 'Dairy Free' },
-    { key: 'eggFree',     label: t.dietLabels.eggFree,      promptLabel: 'Egg Free' },
-    { key: 'nutFree',     label: t.dietLabels.nutFree,      promptLabel: 'Nut Free' },
-    { key: 'lowCarb',     label: t.dietLabels.lowCarb,      promptLabel: 'Low Carb' },
-    { key: 'keto',        label: t.dietLabels.keto,         promptLabel: 'Keto' },
-    { key: 'halal',       label: t.dietLabels.halal,        promptLabel: 'Halal' },
-    { key: 'kosher',      label: t.dietLabels.kosher,       promptLabel: 'Kosher' },
-  ];
+  const selectedDiets = dietSelection ?? new Set(defaultIds);
+  const dietLine = dietaryPrompt(selectedDiets, custom);
+  const visibleResult = result?.dietLine === dietLine ? result : null;
+  const fetched = visibleResult !== null;
+  const recipes = visibleResult?.recipes ?? [];
+  const generationDisabled = loading || !dietaryReady;
+
+  useFocusEffect(useCallback(() => () => setDietSelection(null), []));
 
   function toggleDiet(key: string) {
     if (loading) return;
     clearResults();
-    setSelectedDiets((prev) => {
-      const next = new Set(prev);
+    setDietSelection((previous) => {
+      const next = new Set(previous ?? defaultIds);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
@@ -218,8 +176,7 @@ export default function RecipesScreen() {
   }
 
   function clearResults() {
-    setRecipes([]);
-    setFetched(false);
+    setResult(null);
     setError(null);
   }
 
@@ -227,11 +184,6 @@ export default function RecipesScreen() {
     if (loading) return;
     setPreferences(prev => ({ ...prev, [key]: !prev[key] }));
     clearResults();
-  }
-
-  function buildDietLine(): string {
-    const active = DIETS.filter((d) => selectedDiets.has(d.key)).map((d) => d.promptLabel);
-    return active.length > 0 ? `\nDietary restrictions: ${active.join(', ')}.` : '';
   }
 
   const sortedItems = items.filter((item) => getDaysUntilExpiry(item.expiryDate) >= 0).sort((a, b) => {
@@ -244,8 +196,7 @@ export default function RecipesScreen() {
     if (loading) return;
     setError(null);
     setMode(next);
-    setRecipes([]);
-    setFetched(false);
+    setResult(null);
     if (next === 'custom' && selectedIds.size === 0 && sortedItems.length > 0) {
       // Pre-select all items on first switch to custom
       setSelectedIds(new Set(sortedItems.map((i) => i.id)));
@@ -282,7 +233,7 @@ export default function RecipesScreen() {
   }
 
   async function getRecipes() {
-    if (loading) return;
+    if (generationDisabled) return;
     setError(null);
     if (!RECIPES_API_URL) {
       setError('unavailable');
@@ -315,7 +266,7 @@ export default function RecipesScreen() {
 Here are the items in my pantry, sorted by urgency (items expiring soonest are first):
 
 ${pantryList}
-${buildDietLine()}
+${dietLine}
 Suggest exactly ${RECIPE_COUNT} distinct recipes that use these ingredients, prioritising items that expire soonest. Use different subsets of ingredients for variety rather than forcing all ingredients into every dish.
 
 Return complete recipes for one person with quantified ingredients and ordered preparation steps, matching the required JSON schema.`;
@@ -348,7 +299,7 @@ Return complete recipes for one person with quantified ingredients and ordered p
 I want recipe ideas using the following ingredients:
 
 ${allIngredients.join('\n')}
-${buildDietLine()}${notesLine}
+${dietLine}${notesLine}
 
 Suggest exactly ${RECIPE_COUNT} distinct recipes that make good use of these ingredients. Use different subsets of ingredients and preparation methods for variety.
 
@@ -356,12 +307,10 @@ Return complete recipes for one person with quantified ingredients and ordered p
     }
 
     setLoading(true);
-    setRecipes([]);
-    setFetched(false);
+    setResult(null);
     try {
-      const result = await fetchRecipes(prompt, preferences);
-      setRecipes(result);
-      setFetched(true);
+      const suggestions = await fetchRecipes(prompt, preferences);
+      setResult({ recipes: suggestions, dietLine });
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
       setError(Object.prototype.hasOwnProperty.call(errorMessages, reason) ? reason as RecipeError : 'network');
@@ -371,6 +320,16 @@ Return complete recipes for one person with quantified ingredients and ordered p
   }
 
   const allSelected = sortedItems.length > 0 && sortedItems.every((item) => selectedIds.has(item.id));
+  const dietaryChoices = (
+    <DietaryChoices
+      title={t.recipesDietarySection}
+      hint={t.dietary.usage}
+      selected={selectedDiets}
+      onToggle={toggleDiet}
+      onAdd={toggleDiet}
+      disabled={loading}
+    />
+  );
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
@@ -418,12 +377,12 @@ Return complete recipes for one person with quantified ingredients and ordered p
           {mode === 'quick' && (
             <>
               <Text style={styles.intro}>{t.recipesIntro}</Text>
-              <DietaryToggles diets={DIETS} selectedDiets={selectedDiets} onToggle={toggleDiet} label={t.recipesDietarySection} disabled={loading} />
+              {dietaryChoices}
               <CookingPreferences preferences={preferences} onToggle={toggleCookingPreference} disabled={loading} />
               <TouchableOpacity
-                style={[styles.btn, loading && styles.btnDisabled]}
+                style={[styles.btn, generationDisabled && styles.btnDisabled]}
                 onPress={getRecipes}
-                disabled={loading}
+                disabled={generationDisabled}
                 accessibilityRole="button"
                 activeOpacity={0.8}>
                 {loading ? (
@@ -513,7 +472,7 @@ Return complete recipes for one person with quantified ingredients and ordered p
               )}
 
               {/* Dietary section */}
-              <DietaryToggles diets={DIETS} selectedDiets={selectedDiets} onToggle={toggleDiet} label={t.recipesDietarySection} disabled={loading} />
+              {dietaryChoices}
               <CookingPreferences preferences={preferences} onToggle={toggleCookingPreference} disabled={loading} />
 
               {/* Notes section */}
@@ -530,9 +489,9 @@ Return complete recipes for one person with quantified ingredients and ordered p
               />
 
               <TouchableOpacity
-                style={[styles.btn, loading && styles.btnDisabled]}
+                style={[styles.btn, generationDisabled && styles.btnDisabled]}
                 onPress={getRecipes}
-                disabled={loading}
+                disabled={generationDisabled}
                 accessibilityRole="button"
                 activeOpacity={0.8}>
                 {loading ? (
@@ -628,12 +587,7 @@ const styles = StyleSheet.create({
   chipText: { color: AppColors.primaryDark, fontSize: 14, fontWeight: '500', flexShrink: 1 },
   chipRemove: { color: AppColors.primaryDark, fontSize: 20, lineHeight: 22 },
   notesInput: { ...AppStyles.input, minHeight: 112, lineHeight: 22 },
-  dietSection: { marginTop: 0 },
   dietGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dietChip: { borderWidth: 1, borderColor: AppColors.border, borderRadius: 14, minHeight: 48, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: AppColors.white },
-  dietChipActive: { borderColor: AppColors.accent, backgroundColor: AppColors.primary },
-  dietChipText: { fontSize: 13, fontWeight: '500', color: AppColors.textLight },
-  dietChipTextActive: { color: AppColors.onPrimary },
   cookingSection: { marginTop: 24, padding: 16, borderRadius: 22, backgroundColor: AppColors.limeTint, borderWidth: 1, borderColor: AppColors.limeBorder },
   cookingHint: { fontSize: 13, lineHeight: 20, color: AppColors.avocadoText, marginTop: 8, marginBottom: 14 },
   cookingChip: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48, borderWidth: 1, borderColor: AppColors.limeBorder, backgroundColor: AppColors.background, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 12, maxWidth: '100%' },

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,8 +19,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppColors, AppStyles } from '@/constants/theme';
+import { localDateKey, localReminderDate } from '@/lib/local-date';
 import { useI18n } from '@/store/i18n';
-import { usePantry } from '@/store/pantry';
+import { PantryItem, usePantry } from '@/store/pantry';
 
 // ─── Date Picker Wheel ────────────────────────────────────────────────────────
 
@@ -124,8 +125,8 @@ function DatePickerModal({
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const now = new Date();
-  const firstYear = now.getFullYear();
-  const years = range(now.getFullYear(), now.getFullYear() + 15);
+  const firstYear = Math.min(now.getFullYear(), initialDate.getFullYear());
+  const years = range(firstYear, Math.max(now.getFullYear() + 15, initialDate.getFullYear()));
   const months = range(1, 12);
 
   const [yearIdx, setYearIdx] = useState(() =>
@@ -196,15 +197,44 @@ function DatePickerModal({
 // ─── Add Product Screen ───────────────────────────────────────────────────────
 
 export default function AddProductScreen() {
-  const { addItem } = usePantry();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { items, loading } = usePantry();
   const { t } = useI18n();
+  const item = typeof id === 'string' ? items.find(product => product.id === id) : undefined;
 
-  const [name, setName] = useState('');
-  const [noExpiry, setNoExpiry] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+  if (id && loading) {
+    return <SafeAreaView style={styles.center}><ActivityIndicator color={AppColors.primaryDark} /></SafeAreaView>;
+  }
+  if (id && !item) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.label}>{t.productEdit.missing}</Text>
+        <TouchableOpacity accessibilityRole="button" style={AppStyles.button} onPress={closeProductForm}>
+          <Text style={AppStyles.buttonText}>{t.cancel}</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+  return <ProductForm key={item?.id ?? 'new'} item={item} />;
+}
+
+function closeProductForm() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/pantry');
+}
+
+function ProductForm({ item }: { item?: PantryItem }) {
+  const { addItem, updateItem } = usePantry();
+  const { t } = useI18n();
+  const [name, setName] = useState(item?.name ?? '');
+  const [notes, setNotes] = useState(item?.notes ?? '');
+  const [barcode, setBarcode] = useState(item?.barcode ?? '');
+  const [noExpiry, setNoExpiry] = useState(!!item && !item.expiryDate);
+  const [formattedDate, setFormattedDate] = useState(() => {
+    if (item?.expiryDate) return item.expiryDate;
     const d = new Date();
     d.setMonth(d.getMonth() + 6);
-    return d;
+    return localDateKey(d);
   });
   const [pickerVisible, setPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -212,26 +242,34 @@ export default function AddProductScreen() {
   const [savedName, setSavedName] = useState('');
   const [saveError, setSaveError] = useState(false);
 
-  const formattedDate = [selectedDate.getFullYear(), String(selectedDate.getMonth() + 1).padStart(2, '0'), String(selectedDate.getDate()).padStart(2, '0')].join('-');
+  const pickerDate = useMemo(() => localReminderDate(formattedDate, '12:00') ?? new Date(), [formattedDate]);
 
-  async function handleAdd() {
+  async function handleSave() {
     if (!name.trim() || saving) {
       return;
     }
     setSaveError(false);
     setSaving(true);
     try {
-      await addItem({
+      const fields = {
         name: name.trim(),
+        barcode: barcode.trim() || undefined,
         expiryDate: noExpiry ? undefined : formattedDate,
-      });
+        notes: notes.trim() || undefined,
+      };
+      if (item) {
+        await updateItem(item.id, fields);
+        closeProductForm();
+        return;
+      }
+      await addItem(fields);
       setSavedName(name.trim());
       setSuccess(true);
       setName('');
       setNoExpiry(false);
       setTimeout(() => {
         setSuccess(false);
-        router.back();
+        closeProductForm();
       }, 1200);
     } catch {
       setSaveError(true);
@@ -254,10 +292,10 @@ export default function AddProductScreen() {
   return (
     <SafeAreaView style={AppStyles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t.cancel} onPress={() => router.back()} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={t.cancel} disabled={saving} onPress={closeProductForm} style={styles.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="close" size={22} color={AppColors.textLight} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t.addProductTitle}</Text>
+        <Text accessibilityRole="header" style={styles.headerTitle}>{item ? t.productEdit.title : t.addProductTitle}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -272,7 +310,8 @@ export default function AddProductScreen() {
             placeholder={t.addProductNamePlaceholder}
             placeholderTextColor={AppColors.textLight}
             returnKeyType="done"
-            autoFocus
+            autoFocus={!item}
+            editable={!saving}
           />
 
           {/* No Expiry Toggle */}
@@ -283,6 +322,7 @@ export default function AddProductScreen() {
             </View>
             <Switch
               accessibilityLabel={t.addProductNoExpiry}
+              disabled={saving}
               value={noExpiry}
               onValueChange={setNoExpiry}
               trackColor={{ false: AppColors.border, true: AppColors.avocado }}
@@ -297,6 +337,7 @@ export default function AddProductScreen() {
                 style={styles.datePicker}
                 accessibilityRole="button"
                 accessibilityLabel={t.addProductPickDate + ': ' + formattedDate}
+                disabled={saving}
                 onPress={() => setPickerVisible(true)}
                 activeOpacity={0.7}>
                 <Text style={styles.datePickerText}>{formattedDate}</Text>
@@ -305,23 +346,47 @@ export default function AddProductScreen() {
             </>
           )}
 
+          {item && (
+            <>
+              <Text style={styles.label}>{t.productEdit.barcode}</Text>
+              <TextInput
+                accessibilityLabel={t.productEdit.barcode}
+                style={styles.input}
+                value={barcode}
+                onChangeText={setBarcode}
+                editable={!saving}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </>
+          )}
+          <Text style={styles.label}>{t.productEdit.notes}</Text>
+          <TextInput
+            accessibilityLabel={t.productEdit.notes}
+            style={[styles.input, styles.notes]}
+            value={notes}
+            onChangeText={setNotes}
+            editable={!saving}
+            multiline
+          />
+
           {saveError && <Text accessibilityRole="alert" style={styles.error}>{t.saveError}</Text>}
           <TouchableOpacity
             accessibilityRole="button"
             style={[styles.addBtn, (!name.trim() || saving) && styles.addBtnDisabled]}
-            onPress={handleAdd}
+            onPress={handleSave}
             activeOpacity={0.8}
             disabled={!name.trim() || saving}>
-            {saving ? <ActivityIndicator color={AppColors.onPrimary} /> : <Text style={styles.addBtnText}>{t.addProductAddBtn}</Text>}
+            {saving ? <ActivityIndicator color={AppColors.onPrimary} /> : <Text style={styles.addBtnText}>{item ? t.save : t.addProductAddBtn}</Text>}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <DatePickerModal
         visible={pickerVisible}
-        initialDate={selectedDate}
+        initialDate={pickerDate}
         onConfirm={(date) => {
-          setSelectedDate(date);
+          setFormattedDate(localDateKey(date));
           setPickerVisible(false);
         }}
         onDismiss={() => setPickerVisible(false)}
@@ -341,6 +406,7 @@ const styles = StyleSheet.create({
   form: { padding: 24, paddingTop: 0, paddingBottom: 40, gap: 4 },
   label: { fontSize: 14, fontWeight: '500', color: AppColors.text, marginTop: 24, marginBottom: 10 },
   input: { ...AppStyles.input },
+  notes: { minHeight: 96, textAlignVertical: 'top' },
   toggleRow: { ...AppStyles.card, backgroundColor: AppColors.limeTint, flexDirection: 'row', alignItems: 'center', marginTop: 24, padding: 20, gap: 12 },
   toggleInfo: { flex: 1 },
   toggleLabel: { fontSize: 15, lineHeight: 22, fontWeight: '500', color: AppColors.text },

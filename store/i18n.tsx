@@ -15,7 +15,24 @@ export interface Translations {
   tabSettings: string;
   // Shared
   cancel: string;
+  save: string;
   saveError: string;
+  productEdit: {
+    title: string;
+    open: (name: string) => string;
+    barcode: string;
+    notes: string;
+    missing: string;
+  };
+  dietary: {
+    defaults: string;
+    defaultsHint: string;
+    add: string;
+    name: string;
+    description: string;
+    usage: string;
+    loadError: string;
+  };
   addProductNoExpiryHint: string;
   dateYear: string;
   dateMonth: string;
@@ -208,6 +225,17 @@ const en: Translations = {
   recipesLimit: 'Too many requests. Wait 30 seconds; the local limit is 20 requests per day.',
   dateYear: 'Year', dateMonth: 'Month', dateDay: 'Day',
   saveError: 'Could not save the change. Please try again.',
+  save: 'Save',
+  productEdit: {
+    title: 'Edit product', open: (name) => `Edit ${name}`,
+    barcode: 'Barcode (optional)', notes: 'Product notes (optional)', missing: 'This product is no longer in your pantry.',
+  },
+  dietary: {
+    defaults: 'Default dietary preferences', defaultsHint: 'Selected preferences are already checked when you open Recipes.',
+    add: 'Add a dietary preference', name: 'Preference name', description: 'Describe what to include or avoid',
+    usage: 'Selected preferences are sent to OpenAI. For allergies, check ingredients and product labels.',
+    loadError: 'Dietary preferences could not be loaded. Reopen the app to try again.',
+  },
   addProductNoExpiryHint: 'For example: salt, spices or honey',
   scannerSettings: 'Open settings',
   recipesUnavailable: 'Recipe suggestions are not available yet. You can already choose your ingredients and preferences.',
@@ -336,6 +364,17 @@ const it: Translations = {
   recipesLimit: 'Troppe richieste. Attendi 30 secondi; il limite locale è 20 richieste al giorno.',
   dateYear: 'Anno', dateMonth: 'Mese', dateDay: 'Giorno',
   saveError: 'Non è stato possibile salvare la modifica. Riprova.',
+  save: 'Salva',
+  productEdit: {
+    title: 'Modifica prodotto', open: (name) => `Modifica ${name}`,
+    barcode: 'Codice a barre (facoltativo)', notes: 'Note sul prodotto (facoltative)', missing: 'Questo prodotto non è più in dispensa.',
+  },
+  dietary: {
+    defaults: 'Preferenze alimentari predefinite', defaultsHint: 'Le preferenze selezionate sono già attive quando apri Ricette.',
+    add: 'Aggiungi una preferenza alimentare', name: 'Nome della preferenza', description: 'Descrivi cosa includere o evitare',
+    usage: 'Le preferenze selezionate vengono inviate a OpenAI. In caso di allergie, controlla ingredienti ed etichette.',
+    loadError: 'Non è stato possibile caricare le preferenze alimentari. Riapri l’app per riprovare.',
+  },
   addProductNoExpiryHint: 'Per esempio: sale, spezie o miele',
   scannerSettings: 'Apri le impostazioni',
   recipesUnavailable: 'I suggerimenti di ricette non sono ancora disponibili. Puoi già scegliere ingredienti e preferenze.',
@@ -465,6 +504,17 @@ const fr: Translations = {
   recipesLimit: 'Trop de demandes. Attendez 30 secondes ; la limite locale est de 20 demandes par jour.',
   dateYear: 'Année', dateMonth: 'Mois', dateDay: 'Jour',
   saveError: 'Impossible d’enregistrer la modification. Réessayez.',
+  save: 'Enregistrer',
+  productEdit: {
+    title: 'Modifier le produit', open: (name) => `Modifier ${name}`,
+    barcode: 'Code-barres (facultatif)', notes: 'Notes sur le produit (facultatif)', missing: 'Ce produit n’est plus dans le garde-manger.',
+  },
+  dietary: {
+    defaults: 'Préférences alimentaires par défaut', defaultsHint: 'Les préférences sélectionnées sont actives à l’ouverture des Recettes.',
+    add: 'Ajouter une préférence alimentaire', name: 'Nom de la préférence', description: 'Décrivez ce qu’il faut inclure ou éviter',
+    usage: 'Les préférences sélectionnées sont envoyées à OpenAI. En cas d’allergie, vérifiez les ingrédients et les étiquettes.',
+    loadError: 'Impossible de charger les préférences alimentaires. Rouvrez l’application pour réessayer.',
+  },
   addProductNoExpiryHint: 'Par exemple : sel, épices ou miel',
   scannerSettings: 'Ouvrir les réglages',
   recipesUnavailable: 'Les suggestions de recettes ne sont pas encore disponibles. Vous pouvez déjà choisir vos ingrédients et préférences.',
@@ -596,6 +646,17 @@ const de: Translations = {
   recipesLimit: 'Zu viele Anfragen. Bitte 30 Sekunden warten; das lokale Limit beträgt 20 Anfragen pro Tag.',
   dateYear: 'Jahr', dateMonth: 'Monat', dateDay: 'Tag',
   saveError: 'Die Änderung konnte nicht gespeichert werden. Bitte erneut versuchen.',
+  save: 'Speichern',
+  productEdit: {
+    title: 'Produkt bearbeiten', open: (name) => `${name} bearbeiten`,
+    barcode: 'Strichcode (optional)', notes: 'Notizen zum Produkt (optional)', missing: 'Dieses Produkt ist nicht mehr im Vorrat.',
+  },
+  dietary: {
+    defaults: 'Standard-Ernährungsvorgaben', defaultsHint: 'Die ausgewählten Vorgaben sind beim Öffnen der Rezepte bereits aktiv.',
+    add: 'Ernährungsvorgabe hinzufügen', name: 'Name der Vorgabe', description: 'Beschreibe, was enthalten oder vermieden werden soll',
+    usage: 'Ausgewählte Vorgaben werden an OpenAI gesendet. Prüfe bei Allergien die Zutaten und Produktetiketten.',
+    loadError: 'Die Ernährungsvorgaben konnten nicht geladen werden. Öffne die App erneut.',
+  },
   addProductNoExpiryHint: 'Zum Beispiel: Salz, Gewürze oder Honig',
   scannerSettings: 'Einstellungen öffnen',
   recipesUnavailable: 'Rezeptvorschläge sind noch nicht verfügbar. Zutaten und Vorlieben können bereits ausgewählt werden.',

@@ -84,11 +84,19 @@ export default function PantryScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.cardBody}>
-              <Text style={styles.itemName}>{item.name}</Text>
+            <TouchableOpacity
+              style={styles.cardBody}
+              accessibilityRole="button"
+              accessibilityLabel={t.productEdit.open(item.name)}
+              onPress={() => router.push({ pathname: '/add-product', params: { id: item.id } })}>
+              <View style={styles.itemHeader}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Ionicons name="create-outline" size={17} color={AppColors.primaryDark} />
+              </View>
               {item.expiryDate && <Text style={styles.itemDate}>{t.pantryBestBefore} {item.expiryDate}</Text>}
+              {item.notes && <Text numberOfLines={2} style={styles.itemDate}>{item.notes}</Text>}
               <View style={styles.badgeSpace}><ExpiryBadge expiryDate={item.expiryDate} /></View>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.removeIcon} onPress={() => requestDelete({ kind: 'item', item })} accessibilityRole="button" accessibilityLabel={t.pantryRemove + ': ' + item.name}>
               <Ionicons name="trash-outline" size={19} color={AppColors.textLight} />
             </TouchableOpacity>
@@ -128,8 +136,9 @@ const styles = StyleSheet.create({
   removeExpiredText: { ...AppStyles.buttonText, color: AppColors.expired, flexShrink: 1, textAlign: 'center' },
   list: { paddingHorizontal: 24, paddingBottom: 28, flexGrow: 1 },
   card: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 18, marginBottom: 12 },
-  cardBody: { flex: 1, minWidth: 0 },
-  itemName: { fontSize: 16, lineHeight: 23, fontWeight: '600', color: AppColors.text },
+  cardBody: { flex: 1, minWidth: 0, minHeight: 48, justifyContent: 'center' },
+  itemHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  itemName: { fontSize: 16, lineHeight: 23, fontWeight: '600', color: AppColors.text, flexShrink: 1 },
   itemDate: { fontSize: 12, lineHeight: 18, color: AppColors.textLight, marginTop: 4 },
   badgeSpace: { marginTop: 12 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },

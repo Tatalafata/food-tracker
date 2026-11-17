@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { AppColors } from '@/constants/theme';
+import { DietaryPreferencesProvider } from '@/store/dietary-preferences';
 import { I18nProvider } from '@/store/i18n';
 import { NotificationPrefsProvider } from '@/store/notifications';
 import { PantryProvider } from '@/store/pantry';
@@ -30,14 +31,16 @@ export default function RootLayout() {
       <NotificationPrefsProvider>
         <PantryProvider>
           <RecipePlansProvider>
-            <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: AppColors.background, primary: AppColors.primaryDark } }}>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="add-product" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-              </Stack>
-              <StatusBar style="dark" />
-            </ThemeProvider>
+            <DietaryPreferencesProvider>
+              <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: AppColors.background, primary: AppColors.primaryDark } }}>
+                <Stack>
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="add-product" options={{ presentation: 'modal', headerShown: false }} />
+                  <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                </Stack>
+                <StatusBar style="dark" />
+              </ThemeProvider>
+            </DietaryPreferencesProvider>
           </RecipePlansProvider>
         </PantryProvider>
       </NotificationPrefsProvider>

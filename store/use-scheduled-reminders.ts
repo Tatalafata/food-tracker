@@ -47,7 +47,12 @@ export function useScheduledReminders(
           || (scope === 'summary' && request.identifier === legacySummaryId);
         if (!owned) continue;
         const key = typeof data?.reminderKey === 'string' ? data.reminderKey : '';
-        if (!desired.delete(key)) await Notifications.cancelScheduledNotificationAsync(request.identifier);
+        const reminder = desired.get(key);
+        if (reminder && reminder.title === request.content.title && reminder.body === request.content.body) {
+          desired.delete(key);
+        } else {
+          await Notifications.cancelScheduledNotificationAsync(request.identifier);
+        }
       }
       for (const reminder of desired.values()) {
         if (stale) return;
