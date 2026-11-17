@@ -50,7 +50,8 @@ test('private proxy: structured request, cache, cap and blocked origins', async 
   const server = createRecipeServer({ key: 'test-only', dailyLimit: 1, fetchImpl: async (_url, options) => {
     calls++;
     const request = JSON.parse(options.body);
-    assert.equal(request.model, 'gpt-4.1-nano');
+    assert.equal(request.model, 'gpt-5.6-luna');
+    assert.equal(request.reasoning_effort, 'none');
     assert.equal(request.max_completion_tokens, 5000);
     assert.equal(request.response_format.json_schema.strict, true);
     assert.ok(request.response_format.json_schema.schema.properties.recipes.items.required.includes('totalMinutes'));
@@ -60,6 +61,10 @@ test('private proxy: structured request, cache, cap and blocked origins', async 
   const url = `http://127.0.0.1:${server.address().port}/recipes`;
   const ask = (prompt, preferences) => fetch(url, { method: 'POST', body: JSON.stringify({ prompt, preferences }) });
   try {
+    const health = await fetch(new URL('/health', url));
+    assert.equal(health.status, 200);
+    assert.deepEqual(await health.json(), { service: 'chefsuggest-recipes' });
+    assert.equal(calls, 0);
     const first = await ask('pasta');
     assert.equal(first.status, 200);
     assert.deepEqual((await first.json()).recipes, fixtureRecipes);

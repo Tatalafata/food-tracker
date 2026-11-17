@@ -1,9 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { localDateKey, localReminderDate } from '@/lib/local-date';
+import { useI18n } from '@/store/i18n';
 import { useNotificationPrefs } from '@/store/notifications';
+import { planningCopy } from '@/store/planning-copy';
+import { Reminder, useScheduledReminders } from '@/store/use-scheduled-reminders';
 
 const STORAGE_KEY = '@freshtrack:pantry';
 const INIT_KEY = '@freshtrack:initialized';
@@ -14,7 +17,6 @@ export interface PantryItem {
   barcode?: string;
   expiryDate?: string; // YYYY-MM-DD, undefined/empty = no expiry
   addedDate: string;
-  notificationId?: string;
 }
 
 const MOCK_ITEMS: PantryItem[] = [
@@ -40,7 +42,10 @@ const PantryContext = createContext<PantryContextType | null>(null);
 export function PantryProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<PantryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { prefs } = useNotificationPrefs();
+  const { prefs, ready, permissionReady, allowed } = useNotificationPrefs();
+  const { t, language } = useI18n();
+  const latest = useRef<PantryItem[]>([]);
+  const writes = useRef(Promise.resolve());
 
   useEffect(() => {
     (async () => {
@@ -54,10 +59,11 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
             [STORAGE_KEY, JSON.stringify(MOCK_ITEMS)],
             [INIT_KEY, 'true'],
           ]);
-          setItems(MOCK_ITEMS);
+          latest.current = MOCK_ITEMS;
         } else if (stored) {
-          setItems(JSON.parse(stored));
+          latest.current = JSON.parse(stored);
         }
+        setItems(latest.current);
       } catch (e) {
         console.error('Failed to load pantry', e);
       } finally {
@@ -66,92 +72,42 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  // Reschedule all item notifications when prefs change
-  useEffect(() => {
-    if (loading || items.length === 0 || Platform.OS === 'web') return;
-    (async () => {
-      const updated = await Promise.all(
-        items.map(async (item) => {
-          // Cancel existing notification
-          if (item.notificationId) {
-            try {
-              await Notifications.cancelScheduledNotificationAsync(item.notificationId);
-            } catch {}
-          }
-          if (!prefs.enabled || !item.expiryDate) {
-            return { ...item, notificationId: undefined };
-          }
-          try {
-            const expiryDate = new Date(item.expiryDate + 'T09:00:00');
-            const notifyDate = new Date(expiryDate);
-            notifyDate.setDate(notifyDate.getDate() - prefs.daysBefore);
-            if (notifyDate > new Date()) {
-              const notificationId = await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: 'ChefSuggest: Use it soon!',
-                  body: `${item.name} expires in ${prefs.daysBefore} day${prefs.daysBefore !== 1 ? 's' : ''} — time to use it up!`,
-                  data: { itemId: item.id },
-                },
-                trigger: {
-                  type: Notifications.SchedulableTriggerInputTypes.DATE,
-                  date: notifyDate,
-                },
-              });
-              return { ...item, notificationId };
-            }
-          } catch (e) {
-            console.warn('Notification reschedule failed', e);
-          }
-          return { ...item, notificationId: undefined };
-        }),
-      );
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      setItems(updated);
-    })();
-    // Only run when prefs change, not on every items change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefs.enabled, prefs.daysBefore]);
+  const reminders = useMemo<Reminder[]>(() => items.flatMap((item) => {
+    const expiry = item.expiryDate && localReminderDate(item.expiryDate, '09:00');
+    if (!expiry) return [];
+    return prefs.expiryDays.map((days) => {
+      const date = new Date(expiry);
+      date.setDate(date.getDate() - days);
+      return {
+        key: `${item.id}/${date.getTime()}/${language}`,
+        title: `ChefSuggest · ${t.settingsNotifEnabled}`,
+        body: planningCopy[language].expiryAlert(item.name, days),
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE as const, date },
+      };
+    });
+  }), [items, language, prefs.expiryDays, t.settingsNotifEnabled]);
+  useScheduledReminders('expiry', reminders, !loading && ready && permissionReady, allowed);
 
-  const saveItems = useCallback(async (next: PantryItem[]) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setItems(next);
+  const saveItems = useCallback((update: (items: PantryItem[]) => PantryItem[]) => {
+    const write = writes.current.then(async () => {
+      const next = update(latest.current);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      latest.current = next;
+      setItems(next);
+    });
+    writes.current = write.catch(() => {});
+    return write;
   }, []);
 
   const addItem = useCallback(
     async (item: Omit<PantryItem, 'id' | 'addedDate'>) => {
-      const newItem: PantryItem = {
+      await saveItems((current) => [...current, {
         ...item,
         id: Date.now().toString(),
         addedDate: new Date().toISOString().split('T')[0],
-      };
-
-      if (Platform.OS !== 'web' && prefs.enabled && item.expiryDate) {
-        try {
-          const expiryDate = new Date(item.expiryDate + 'T09:00:00');
-          const notifyDate = new Date(expiryDate);
-          notifyDate.setDate(notifyDate.getDate() - prefs.daysBefore);
-          if (notifyDate > new Date()) {
-            const notificationId = await Notifications.scheduleNotificationAsync({
-              content: {
-                title: 'ChefSuggest: Use it soon!',
-                body: `${item.name} expires in ${prefs.daysBefore} day${prefs.daysBefore !== 1 ? 's' : ''} — time to use it up!`,
-                data: { itemId: newItem.id },
-              },
-              trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: notifyDate,
-              },
-            });
-            newItem.notificationId = notificationId;
-          }
-        } catch (e) {
-          console.warn('Notification scheduling failed', e);
-        }
-      }
-
-      await saveItems([...items, newItem]);
+      }]);
     },
-    [items, saveItems, prefs],
+    [saveItems],
   );
 
   const bulkAddItems = useCallback(
@@ -162,22 +118,16 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
         id: `${Date.now()}-${i}`,
         addedDate: today,
       }));
-      await saveItems([...items, ...created]);
+      await saveItems((current) => [...current, ...created]);
     },
-    [items, saveItems],
+    [saveItems],
   );
 
   const removeItem = useCallback(
     async (id: string) => {
-      const item = items.find((i) => i.id === id);
-      if (item?.notificationId && Platform.OS !== 'web') {
-        try {
-          await Notifications.cancelScheduledNotificationAsync(item.notificationId);
-        } catch (_) {}
-      }
-      await saveItems(items.filter((i) => i.id !== id));
+      await saveItems((current) => current.filter((i) => i.id !== id));
     },
-    [items, saveItems],
+    [saveItems],
   );
 
   return (
@@ -195,10 +145,8 @@ export function usePantry() {
 
 export function getDaysUntilExpiry(expiryDate?: string): number {
   if (!expiryDate) return Infinity;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate + 'T00:00:00');
-  return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  // Both date-only values use UTC so daylight saving cannot change the day count.
+  return (Date.parse(expiryDate) - Date.parse(localDateKey())) / (1000 * 60 * 60 * 24);
 }
 
 export type ExpiryStatus = 'expired' | 'warning' | 'good' | 'none';

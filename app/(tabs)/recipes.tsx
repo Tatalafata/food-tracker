@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,26 +22,41 @@ import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
 import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
+import { planningCopy } from '@/store/planning-copy';
 
 
 type RecipeMode = 'quick' | 'custom';
+type RecipeError = 'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | 'credits' | 'quality' | 'offline' | 'key' | 'model';
 
-const RECIPES_API_URL = process.env.EXPO_PUBLIC_RECIPES_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3001' : '');
+const apiUrl = process.env.EXPO_PUBLIC_RECIPES_API_URL ?? (Platform.OS === 'web' ? 'http://localhost:3001' : '');
+const isLocalApi = /^http:\/\/(localhost|127\.0\.0\.1)(?::\d+)?(?:\/|$)/.test(apiUrl);
+const RECIPES_API_URL = Platform.OS !== 'web' && isLocalApi ? '' : apiUrl;
 
 async function fetchRecipes(prompt: string, preferences: RecipePreferences): Promise<Recipe[]> {
-  const response = await fetch(RECIPES_API_URL.replace(/\/$/, '') + '/recipes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, preferences }),
-    signal: AbortSignal.timeout(80000),
-  });
-  if (!response.ok) {
-    const failure = await response.json().catch(() => ({}));
-    throw new Error(response.status === 402 ? 'credits' : response.status === 503 ? 'unavailable' : response.status === 429 ? 'limit' : failure.error === 'invalid_response' ? 'quality' : 'network');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 80000);
+  try {
+    const response = await fetch(RECIPES_API_URL.replace(/\/$/, '') + '/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, preferences }),
+      signal: controller.signal,
+    }).catch(() => { throw new Error(isLocalApi ? 'offline' : 'network'); });
+    if (!response.ok) {
+      const failure = await response.json().catch(() => ({}));
+      if (response.status === 402) throw new Error('credits');
+      if (response.status === 429) throw new Error('limit');
+      if (failure.error === 'not_configured') throw new Error('key');
+      if (failure.error === 'model_unavailable') throw new Error('model');
+      if (failure.error === 'invalid_response') throw new Error('quality');
+      throw new Error('network');
+    }
+    const data = await response.json();
+    if (!isRecipeBatch(data.recipes) || !matchesRecipePreferences(data.recipes, preferences)) throw new Error('quality');
+    return data.recipes;
+  } finally {
+    clearTimeout(timer);
   }
-  const data = await response.json();
-  if (!isRecipeBatch(data.recipes) || !matchesRecipePreferences(data.recipes, preferences)) throw new Error('quality');
-  return data.recipes;
 }
 
 function ExpiryPill({ item }: { item: PantryItem }) {
@@ -150,18 +166,21 @@ function RecipeCard({ recipe, index, keyIngredientsLabel, onPress }: { recipe: R
 
 export default function RecipesScreen() {
   const { items } = usePantry();
-  const { t } = useI18n();
+  const { language, t } = useI18n();
+  const copy = planningCopy[language];
 
   const [mode, setMode] = useState<RecipeMode>('quick');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
-  const [error, setError] = useState<'unavailable' | 'emptyPantry' | 'noIngredients' | 'network' | 'limit' | 'credits' | 'quality' | null>(null);
-  const errorText = error ? {
-    unavailable: t.recipesUnavailable, emptyPantry: t.recipesEmptyPantryMsg,
+  const [error, setError] = useState<RecipeError | null>(null);
+  const errorMessages: Record<RecipeError, string> = {
+    unavailable: t.recipesUnavailable, emptyPantry: copy.usableIngredients,
     noIngredients: t.recipesCustomNoIngredients, network: t.recipesNetworkError, limit: t.recipesLimit, credits: t.recipesCredits, quality: t.recipesQualityError,
-  }[error] : '';
+    offline: copy.apiOffline, key: copy.apiKey, model: copy.apiModel,
+  };
+  const errorText = error ? errorMessages[error] : '';
 
   // Custom mode state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -215,7 +234,7 @@ export default function RecipesScreen() {
     return active.length > 0 ? `\nDietary restrictions: ${active.join(', ')}.` : '';
   }
 
-  const sortedItems = [...items].sort((a, b) => {
+  const sortedItems = items.filter((item) => getDaysUntilExpiry(item.expiryDate) >= 0).sort((a, b) => {
     const dA = a.expiryDate ? getDaysUntilExpiry(a.expiryDate) : Infinity;
     const dB = b.expiryDate ? getDaysUntilExpiry(b.expiryDate) : Infinity;
     return dA - dB;
@@ -227,9 +246,9 @@ export default function RecipesScreen() {
     setMode(next);
     setRecipes([]);
     setFetched(false);
-    if (next === 'custom' && selectedIds.size === 0 && items.length > 0) {
+    if (next === 'custom' && selectedIds.size === 0 && sortedItems.length > 0) {
       // Pre-select all items on first switch to custom
-      setSelectedIds(new Set(items.map((i) => i.id)));
+      setSelectedIds(new Set(sortedItems.map((i) => i.id)));
     }
   }
 
@@ -243,10 +262,10 @@ export default function RecipesScreen() {
   }
 
   function toggleSelectAll() {
-    if (selectedIds.size === items.length) {
+    if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.map((i) => i.id)));
+      setSelectedIds(new Set(sortedItems.map((i) => i.id)));
     }
   }
 
@@ -270,21 +289,22 @@ export default function RecipesScreen() {
       return;
     }
 
+    const usableItems = sortedItems.filter((item) => getDaysUntilExpiry(item.expiryDate) >= 0);
     let prompt = '';
 
     if (mode === 'quick') {
-      if (items.length === 0) {
+      if (usableItems.length === 0) {
         setError('emptyPantry');
         return;
       }
-      const urgentItems = sortedItems.filter((i) => i.expiryDate).slice(0, 12);
-      const stapleItems = sortedItems.filter((i) => !i.expiryDate);
+      const urgentItems = usableItems.filter((i) => i.expiryDate).slice(0, 12);
+      const stapleItems = usableItems.filter((i) => !i.expiryDate);
 
       const pantryList = [
         ...urgentItems.map((i) => {
           const days = getDaysUntilExpiry(i.expiryDate!);
           const urgency =
-            days < 0 ? `(${t.recipesExpired})` : days === 0 ? `(${t.recipesExpiresToday})` : `(${t.recipesExpiresIn(days)})`;
+            days === 0 ? `(${t.recipesExpiresToday})` : `(${t.recipesExpiresIn(days)})`;
           return `- ${i.name} ${urgency}`;
         }),
         ...(stapleItems.length > 0 ? [`\nAlways available staples: ${stapleItems.map((i) => i.name).join(', ')}`] : []),
@@ -300,14 +320,14 @@ Suggest exactly ${RECIPE_COUNT} distinct recipes that use these ingredients, pri
 
 Return complete recipes for one person with quantified ingredients and ordered preparation steps, matching the required JSON schema.`;
     } else {
-      const selectedPantryItems = sortedItems.filter((i) => selectedIds.has(i.id));
+      const selectedPantryItems = usableItems.filter((i) => selectedIds.has(i.id));
       const allIngredients = [
         ...selectedPantryItems
           .filter((i) => i.expiryDate)
           .map((i) => {
             const days = getDaysUntilExpiry(i.expiryDate!);
             const urgency =
-              days < 0 ? `(${t.recipesExpired})` : days === 0 ? `(${t.recipesExpiresToday})` : `(${t.recipesExpiresIn(days)})`;
+              days === 0 ? `(${t.recipesExpiresToday})` : `(${t.recipesExpiresIn(days)})`;
             return `- ${i.name} ${urgency}`;
           }),
         ...selectedPantryItems
@@ -344,13 +364,13 @@ Return complete recipes for one person with quantified ingredients and ordered p
       setFetched(true);
     } catch (cause) {
       const reason = cause instanceof Error ? cause.message : '';
-      setError(reason === 'credits' ? 'credits' : reason === 'unavailable' ? 'unavailable' : reason === 'limit' ? 'limit' : reason === 'quality' ? 'quality' : 'network');
+      setError(Object.prototype.hasOwnProperty.call(errorMessages, reason) ? reason as RecipeError : 'network');
     } finally {
       setLoading(false);
     }
   }
 
-  const allSelected = items.length > 0 && selectedIds.size === items.length;
+  const allSelected = sortedItems.length > 0 && sortedItems.every((item) => selectedIds.has(item.id));
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={AppStyles.screen}>
@@ -421,7 +441,7 @@ Return complete recipes for one person with quantified ingredients and ordered p
               {/* Pantry section */}
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>{t.recipesPantrySection}</Text>
-                {items.length > 0 && (
+                {sortedItems.length > 0 && (
                   <TouchableOpacity style={styles.selectAllTouch} onPress={toggleSelectAll} accessibilityRole="button">
                     <Text style={styles.selectAllBtn}>
                       {allSelected ? t.recipesDeselectAll : t.recipesSelectAll}
@@ -430,8 +450,8 @@ Return complete recipes for one person with quantified ingredients and ordered p
                 )}
               </View>
 
-              {items.length === 0 ? (
-                <Text style={styles.emptySection}>{t.recipesNoPantryItems}</Text>
+              {sortedItems.length === 0 ? (
+                <Text style={styles.emptySection}>{copy.noUsableItems}</Text>
               ) : (
                 <View style={styles.checkList}>
                   {sortedItems.map((item) => {
@@ -559,7 +579,16 @@ Return complete recipes for one person with quantified ingredients and ordered p
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-      {selectedRecipe && <RecipeDetail recipe={selectedRecipe} onClose={() => setSelectedRecipe(null)} />}
+      {selectedRecipe && (
+        <RecipeDetail
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+          onOpenCalendar={(day) => {
+            setSelectedRecipe(null);
+            router.navigate({ pathname: '/calendar', params: { day, focus: String(Date.now()) } });
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }

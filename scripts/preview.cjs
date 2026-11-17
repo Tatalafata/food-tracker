@@ -2,6 +2,7 @@
 const { spawn } = require('node:child_process');
 const { get } = require('node:http');
 const { createServer } = require('node:net');
+const { setTimeout: delay } = require('node:timers/promises');
 const path = require('node:path');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -49,6 +50,50 @@ function isPortFree(port) {
   });
 }
 
+const recipePort = 3001;
+
+function isRecipeServiceReady() {
+  return new Promise((resolve) => {
+    const request = get({ hostname: '127.0.0.1', port: recipePort, path: '/health' }, (response) => {
+      let body = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => {
+        body += chunk;
+        if (body.length > 1024) request.destroy();
+      });
+      response.on('error', () => resolve(false));
+      response.on('end', () => {
+        try {
+          resolve(response.statusCode === 200 && JSON.parse(body).service === 'chefsuggest-recipes');
+        } catch {
+          resolve(false);
+        }
+      });
+    });
+    request.setTimeout(1000, () => request.destroy());
+    request.on('error', () => resolve(false));
+  });
+}
+
+async function ensureRecipeService() {
+  if (await isRecipeServiceReady()) return;
+  if (await isPortFree(recipePort)) {
+    const child = spawn(process.execPath, ['--env-file-if-exists=.env', 'server/recipes.mjs'], {
+      cwd: projectRoot, detached: true, stdio: 'ignore', windowsHide: true,
+    });
+    child.on('error', () => {});
+    child.unref();
+    for (let attempt = 0; attempt < 12; attempt++) {
+      if (await isRecipeServiceReady()) {
+        console.log('Servizio ricette locale avviato.');
+        return;
+      }
+      await delay(250);
+    }
+  }
+  console.warn('Servizio ricette locale non raggiungibile sulla porta 3001. Puoi comunque usare l\'anteprima.');
+}
+
 function openBrowser(url) {
   const command = process.platform === 'win32' ? 'rundll32.exe'
     : process.platform === 'darwin' ? 'open' : 'xdg-open';
@@ -59,6 +104,7 @@ function openBrowser(url) {
 }
 
 async function main() {
+  await ensureRecipeService();
   let freePort;
   // Prefer reuse even if an earlier port has become free since the last launch.
   for (let port = 8081; port <= 8090; port++) {

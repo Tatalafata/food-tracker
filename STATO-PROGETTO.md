@@ -1,6 +1,6 @@
 # Promemoria ChefSuggest
 
-Aggiornato il 15 ottobre 2026. Questo file permette alle nuove chat di riprendere il lavoro senza dipendere dalla memoria della conversazione. Non inserire credenziali o dati personali.
+Aggiornato il 17 novembre 2026. Questo file permette alle nuove chat di riprendere il lavoro senza dipendere dalla memoria della conversazione. Non inserire credenziali o dati personali.
 
 ## Decisioni del proprietario
 
@@ -97,3 +97,11 @@ Ricette complete con porzioni concordate e implementate. Seguire le prossime ric
 ### Richiesta di un nome
 
 - L'utente chiede una proposta di nome utilizzabile in Europa, non di cambiare gia il marchio nell'app. Candidato proposto: Dispiva (richiamo a dispensa viva). Ricerca preliminare TMview del 15 ottobre: nome identico senza risultati; ricerca fuzzy con somiglianze, fra cui DISPIVAL registrato in Spagna per vernici e vecchie voci DISTIVA bulgare mostrate come scadute/terminate. Non dichiarare il nome legalmente libero: prima dell'adozione serve verifica professionale dei diritti anteriori e dei mercati di lancio. Domini e disponibilita negli store non verificati direttamente. Nome attuale ChefSuggest conservato.
+
+## Avvisi, ricette nel calendario e ripristino delle ricette — 17 novembre
+
+- In Impostazioni si possono combinare avvisi di scadenza 3, 2 o 1 giorno prima e il giorno stesso. Gli avvisi vengono programmati alle 9:00 locali. Mai annulla gli avvisi di scadenza e il riepilogo giornaliero. Le vecchie preferenze attive mantengono il proprio anticipo, compresi i 2 giorni. Le scadenze già salvate restano nella dispensa. Su Android e iPhone serve il permesso per consegnare gli avvisi.
+- Dal dettaglio di una ricetta si può scegliere un giorno e, facoltativamente, l'ora del promemoria. Il calendario evidenzia le ricette e le scadenze anche quando coincidono. La ricetta intera e le porzioni sono salvate sul dispositivo e riapribili senza chiamare OpenAI. I promemoria delle ricette sono indipendenti dagli avvisi di scadenza.
+- L'anteprima avvia o riusa anche il servizio locale delle ricette. GPT-4.1 nano era stato ritirato, confermato dal rifiuto di OpenAI. Il servizio usa ora GPT-5.6 Luna, sostituto indicato dalla documentazione, con una chiamata per cinque ricette, limite di 5.000 token in uscita, cache e limiti giornalieri esistenti. Tariffe ed esempio aggiornati in OPENAI-SETUP.md. I prodotti scaduti sono esclusi dalla selezione e dalle richieste ricette.
+- Nel browser a 390 e 320 punti: combinazione 3 giorni e giorno stesso, persistenza, Mai, quattro lingue, cinque ricette generate con OpenAI, scelta del giorno, rifiuto di un'ora non valida, salvataggio alle 19:15, riapertura con dosi per due dopo ricaricamento e presenza simultanea di ricetta e scadenza. Prove su un indirizzo locale separato dai dati ordinari. Controlli del codice e 12 test del servizio superati. Export Expo per Android e iOS riuscito.
+- Restano da provare sui telefoni i permessi e la consegna degli avvisi con app chiusa, la tastiera per l'orario e la cancellazione degli avvisi dopo Mai o rimozione di una ricetta. Per generare nuove ricette dai telefoni serve ancora un servizio HTTPS accessibile e protetto.

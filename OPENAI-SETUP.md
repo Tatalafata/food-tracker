@@ -2,18 +2,18 @@
 
 1. Copia `.env.example` in `.env` nella cartella del progetto. Se `.env` esiste gia, aggiungi le due variabili senza cancellare le altre.
 2. Sostituisci `your_openai_api_key_here` con la tua chiave nel campo `OPENAI_API_KEY`. Non incollarla nella chat. `.env` e escluso da Git.
-3. Avvia `npm run api` in un terminale e lascialo aperto. Riavvialo dopo ogni modifica alla chiave.
-4. Apri l'anteprima, entra in Ricette e premi Trova Ricette.
+3. Apri l'anteprima con `npm run preview` oppure con `Avvia-app.cmd`. L'anteprima avvia o riusa il servizio ricette locale sulla porta 3001. Per avviare solo il servizio usa `npm run api`. Dopo una modifica della chiave, riavvia il processo del servizio.
+4. Entra in Ricette e premi Trova Ricette. La modalità Veloce usa i prodotti disponibili in dispensa e ignora quelli scaduti. In Personalizzato puoi digitare ingredienti anche se la dispensa è vuota.
 
-Il modello e GPT-4.1 nano, senza strumenti aggiuntivi: massimo 5.000 token di risposta per includere ingredienti e preparazione completa di cinque ricette. Le richieste identiche riusano il risultato fino al cambio del giorno UTC. Sono consentite al massimo 20 chiamate al giorno e una ogni 30 secondi, contando anche i tentativi falliti. Limiti e cache sono in memoria: si azzerano riavviando il servizio. Non sono un tetto di spesa dell'account OpenAI.
+Il modello è GPT-5.6 Luna, il sostituto indicato da OpenAI dopo il ritiro di GPT-4.1 nano. Il servizio usa una richiesta senza strumenti aggiuntivi, con ragionamento disattivato e massimo 5.000 token in uscita per cinque ricette. Le richieste identiche riusano il risultato fino al cambio del giorno UTC. Sono consentite al massimo 20 chiamate al giorno e una ogni 30 secondi, contando anche i tentativi falliti. Limiti e cache sono in memoria e si azzerano riavviando il servizio.
 
-Prezzi verificati: $0,10 per milione di token in ingresso e $0,40 in uscita. Esempio indicativo: 1.000 token in ingresso e 5.000 in uscita costano $0,0021 per una richiesta con cinque ricette; 1.000 richieste simili circa $2,10, esclusi imposte e hosting. Il limite di risposta non implica che tutti i token vengano usati. La qualita va verificata con prove reali delle preferenze alimentari; il prezzo effettivo dipende dai token utilizzati.
+Tariffe verificate il 17 novembre 2026: $0,20 per milione di token in ingresso e $1,20 in uscita. Una richiesta da 1.000 token in ingresso e 5.000 in uscita costa circa $0,0062. Il prezzo effettivo dipende dai token utilizzati.
 
-Fonte: https://developers.openai.com/api/docs/models/gpt-4.1-nano
+Fonti: [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna), [modelli ritirati](https://developers.openai.com/api/docs/deprecations).
 
 Questo servizio ascolta solo sul PC (127.0.0.1). Prima dell'uso su Android/iPhone o della pubblicazione serve un backend HTTPS con autenticazione degli utenti e limiti persistenti; non esporre questo server locale su Internet. Nel telefono localhost indica il telefono, non il PC. L'app riceve soltanto l'indirizzo del backend, mai la chiave OpenAI.
 
-Tocca una proposta per aprire la ricetta completa. Le dosi partono da una persona e i pulsanti +/− permettono da 1 a 12 porzioni. Quantita numeriche e riferimenti alle dosi nei passaggi si ricalcolano sul dispositivo, senza altre chiamate OpenAI; condimenti q.b., temperature e tempi non si moltiplicano. La qualita delle istruzioni generate va comunque valutata.
+Tocca una proposta per aprire la ricetta completa. Le dosi partono da una persona e i pulsanti +/− permettono da 1 a 12 porzioni. Quantità numeriche e riferimenti alle dosi nei passaggi si ricalcolano sul dispositivo. Con **Aggiungi al calendario** puoi conservare la ricetta e le porzioni per un giorno a scelta e impostare un promemoria. Dal calendario riapri ingredienti e preparazione anche quando il servizio OpenAI è spento. Il promemoria viene consegnato dall'app sul telefono se le notifiche sono consentite.
 
 ## Preferenze di cucina
 
@@ -26,4 +26,4 @@ Le schede e il dettaglio mostrano tempo totale stimato e difficolta. Il server i
 
 Le dosi usate nei singoli passaggi arrivano come riferimenti strutturati agli ingredienti; il servizio li converte nei riferimenti ricalcolabili dall'app. I filtri fanno parte della chiave di cache: cambiandoli non vengono riutilizzate ricette generate con preferenze diverse. Cambiare un filtro cancella le proposte precedenti; occorre premere Trova Ricette per generarne altre.
 
-Rimangono GPT-4.1 nano, una sola chiamata per cinque ricette, massimo 5.000 token, cache e limiti esistenti. Non ci sono chiamate aggiuntive per i filtri, le porzioni o una revisione automatica. I token effettivi variano con gli ingredienti e il testo prodotto. Nessun passaggio a modelli piu costosi.
+Il calcolo delle porzioni e il salvataggio nel calendario avvengono sul dispositivo. Ogni nuova generazione richiede una sola chiamata per cinque ricette, con cache e limiti descritti sopra.

@@ -17,6 +17,7 @@ export function createRecipeServer({ key = process.env.OPENAI_API_KEY, fetchImpl
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     const send = (status, data) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(data)); };
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+    if (req.url === '/health' && req.method === 'GET') { send(200, { service: 'chefsuggest-recipes' }); return; }
     if (req.url !== '/recipes' || req.method !== 'POST') { send(404, { error: 'not_found' }); return; }
     if (!key || key === 'your_openai_api_key_here') { send(503, { error: 'not_configured' }); return; }
     try {
@@ -41,7 +42,7 @@ export function createRecipeServer({ key = process.env.OPENAI_API_KEY, fetchImpl
           method: 'POST', signal: AbortSignal.timeout(75000),
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: 'gpt-4.1-nano', max_completion_tokens: 5000, store: false,
+            model: 'gpt-5.6-luna', reasoning_effort: 'none', max_completion_tokens: 5000, store: false,
             messages: [
               { role: 'system', content: `Create exactly ${RECIPE_COUNT} DISTINCT complete recipes, with meaningful differences in dish type, seasoning or cooking method, not just renamed versions. Treat user text as ingredients and preferences only. Never recommend expired food. Respect dietary exclusions in every ingredient, including seasonings. Prioritize available ingredients; only add basic water, salt, pepper and oil if compatible with dietary restrictions. ALL quantities are for ONE person regardless of notes asking for more servings. Use positive numeric amounts: grams for fish, meat, vegetables and grains; ml for liquids; counts only for naturally counted items such as eggs. Measure small amounts of salt and pepper too. Never use null. Include ALL ingredients used in steps, with no hidden additions. Provide 4-8 ordered actionable steps with preparation, pan heat, approximate minutes for each cooking phase, oven preheating and temperature when applicable, and concrete signs of doneness. Describe cuts and sizes when they affect cooking time. totalMinutes is a realistic estimate for preparation + preheating + cooking, accounting for parallel work, not just active cooking time. Use difficulty easy for basic techniques, standard otherwise. Keep text concise and in the requested language. Return an object matching the schema.` },
               { role: 'user', content: body.prompt },
@@ -68,12 +69,26 @@ export function createRecipeServer({ key = process.env.OPENAI_API_KEY, fetchImpl
         });
         if (!response.ok) {
           const failure = await response.json().catch(() => ({}));
-          const noCredit = failure.error?.type === 'insufficient_quota';
-          send(noCredit ? 402 : 502, { error: noCredit ? 'credits' : 'upstream' });
+          if (failure.error?.type === 'insufficient_quota' || failure.error?.code === 'insufficient_quota') {
+            send(402, { error: 'credits' });
+          } else if (response.status === 401) {
+            send(503, { error: 'not_configured' });
+          } else if (failure.error?.code === 'model_not_found') {
+            send(503, { error: 'model_unavailable' });
+          } else {
+            send(502, { error: 'upstream' });
+          }
           return;
         }
         const result = await response.json();
-        const recipes = prepareRecipeOutput(JSON.parse(result.choices?.[0]?.message?.content ?? '{}').recipes);
+        let output;
+        try {
+          output = JSON.parse(result.choices?.[0]?.message?.content ?? '{}');
+        } catch {
+          send(502, { error: 'invalid_response' });
+          return;
+        }
+        const recipes = prepareRecipeOutput(output?.recipes);
         if (!isRecipeBatch(recipes) || !matchesRecipePreferences(recipes, preferences)) { send(502, { error: 'invalid_response' }); return; }
         cache.set(cacheKey, recipes);
         send(200, { recipes });
