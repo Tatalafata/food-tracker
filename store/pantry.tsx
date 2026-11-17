@@ -34,6 +34,7 @@ interface PantryContextType {
   addItem: (item: Omit<PantryItem, 'id' | 'addedDate'>) => Promise<void>;
   bulkAddItems: (items: Omit<PantryItem, 'id' | 'addedDate'>[]) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
+  removeExpiredItems: (ids: readonly string[]) => Promise<void>;
   loading: boolean;
 }
 
@@ -130,8 +131,14 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
     [saveItems],
   );
 
+  const removeExpiredItems = useCallback((ids: readonly string[]) => {
+    const selectedIds = new Set(ids);
+    return saveItems((current) => current.filter((item) =>
+      !selectedIds.has(item.id) || getExpiryStatus(item.expiryDate) !== 'expired'));
+  }, [saveItems]);
+
   return (
-    <PantryContext.Provider value={{ items, addItem, bulkAddItems, removeItem, loading }}>
+    <PantryContext.Provider value={{ items, addItem, bulkAddItems, removeItem, removeExpiredItems, loading }}>
       {children}
     </PantryContext.Provider>
   );

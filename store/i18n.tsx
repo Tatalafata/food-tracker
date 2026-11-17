@@ -55,6 +55,8 @@ export interface Translations {
   pantryRemoveTitle: string;
   pantryRemoveConfirm: (name: string) => string;
   pantryRemove: string;
+  pantryRemoveExpired: string;
+  pantryRemoveExpiredConfirm: (n: number) => string;
   pantryEmptyTitle: string;
   pantryEmptyText: string;
   pantryBestBefore: string;
@@ -223,6 +225,8 @@ const en: Translations = {
   pantrySubtitle: (n) => `${n} item${n !== 1 ? 's' : ''}`,
   pantryRemoveTitle: 'Remove Item',
   pantryRemoveConfirm: (name) => `Remove "${name}" from your pantry?`,
+  pantryRemoveExpired: 'Remove all expired products',
+  pantryRemoveExpiredConfirm: (n) => n === 1 ? 'Remove 1 expired product from your pantry?' : `Remove ${n} expired products from your pantry?`,
   pantryRemove: 'Remove', pantryEmptyTitle: 'Your pantry is empty',
   pantryEmptyText: 'Scan a barcode to add your first item.', pantryBestBefore: 'Best before:',
   scannerTitle: 'Scan Barcode', scannerSubtitle: 'Point at a product barcode',
@@ -349,6 +353,8 @@ const it: Translations = {
   pantrySubtitle: (n) => `${n} articol${n !== 1 ? 'i' : 'o'}`,
   pantryRemoveTitle: 'Rimuovi Articolo',
   pantryRemoveConfirm: (name) => `Rimuovere "${name}" dalla dispensa?`,
+  pantryRemoveExpired: 'Rimuovi tutti gli scaduti',
+  pantryRemoveExpiredConfirm: (n) => n === 1 ? 'Rimuovere 1 prodotto scaduto dalla dispensa?' : `Rimuovere ${n} prodotti scaduti dalla dispensa?`,
   pantryRemove: 'Rimuovi', pantryEmptyTitle: 'La dispensa è vuota',
   pantryEmptyText: 'Scansiona un codice a barre per aggiungere il primo articolo.',
   pantryBestBefore: 'Scadenza:',
@@ -477,6 +483,8 @@ const fr: Translations = {
   pantrySubtitle: (n) => `${n} article${n !== 1 ? 's' : ''}`,
   pantryRemoveTitle: "Supprimer l'article",
   pantryRemoveConfirm: (name) => `Supprimer "${name}" du garde-manger ?`,
+  pantryRemoveExpired: 'Supprimer tous les produits périmés',
+  pantryRemoveExpiredConfirm: (n) => n === 1 ? 'Supprimer 1 produit périmé du garde-manger ?' : `Supprimer ${n} produits périmés du garde-manger ?`,
   pantryRemove: 'Supprimer', pantryEmptyTitle: 'Le garde-manger est vide',
   pantryEmptyText: 'Scannez un code-barres pour ajouter votre premier article.',
   pantryBestBefore: 'À consommer avant :',
@@ -606,6 +614,8 @@ const de: Translations = {
   pantrySubtitle: (n) => `${n} Artikel`,
   pantryRemoveTitle: 'Artikel entfernen',
   pantryRemoveConfirm: (name) => `"${name}" aus dem Vorrat entfernen?`,
+  pantryRemoveExpired: 'Alle abgelaufenen Produkte entfernen',
+  pantryRemoveExpiredConfirm: (n) => n === 1 ? '1 abgelaufenes Produkt aus dem Vorrat entfernen?' : `${n} abgelaufene Produkte aus dem Vorrat entfernen?`,
   pantryRemove: 'Entfernen', pantryEmptyTitle: 'Der Vorrat ist leer',
   pantryEmptyText: 'Scannen Sie einen Barcode, um den ersten Artikel hinzuzufügen.',
   pantryBestBefore: 'Mindesthaltbar bis:',

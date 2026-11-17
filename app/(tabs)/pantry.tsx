@@ -8,22 +8,39 @@ import ExpiryBadge from '@/components/ExpiryBadge';
 import ScreenHeader from '@/components/ScreenHeader';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { useI18n } from '@/store/i18n';
-import { getDaysUntilExpiry, PantryItem, usePantry } from '@/store/pantry';
+import { getDaysUntilExpiry, getExpiryStatus, PantryItem, usePantry } from '@/store/pantry';
+
+type PendingDelete = { kind: 'item'; item: PantryItem } | { kind: 'expired'; ids: string[] };
 
 export default function PantryScreen() {
-  const { items, removeItem, loading } = usePantry();
+  const { items, removeItem, removeExpiredItems, loading } = usePantry();
   const { t } = useI18n();
-  const [pendingDelete, setPendingDelete] = useState<PantryItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState(false);
   const sorted = useMemo(() => [...items].sort((a, b) => getDaysUntilExpiry(a.expiryDate) - getDaysUntilExpiry(b.expiryDate)), [items]);
+  const hasExpired = items.some((item) => getExpiryStatus(item.expiryDate) === 'expired');
+
+  function requestDelete(action: PendingDelete) {
+    setRemoveError(false);
+    setPendingDelete(action);
+  }
+
+  function requestExpiredDelete() {
+    const ids = items.filter((item) => getExpiryStatus(item.expiryDate) === 'expired').map((item) => item.id);
+    if (ids.length > 0) requestDelete({ kind: 'expired', ids });
+  }
 
   async function confirmDelete() {
     if (!pendingDelete || removing) return;
     setRemoving(true);
     setRemoveError(false);
     try {
-      await removeItem(pendingDelete.id);
+      if (pendingDelete.kind === 'expired') {
+        await removeExpiredItems(pendingDelete.ids);
+      } else {
+        await removeItem(pendingDelete.item.id);
+      }
       setPendingDelete(null);
     } catch {
       setRemoveError(true);
@@ -48,6 +65,16 @@ export default function PantryScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={hasExpired ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t.pantryRemoveExpired}
+            style={styles.removeExpiredButton}
+            onPress={requestExpiredDelete}>
+            <Ionicons name="trash-outline" size={19} color={AppColors.expired} />
+            <Text style={styles.removeExpiredText}>{t.pantryRemoveExpired}</Text>
+          </TouchableOpacity>
+        ) : null}
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={styles.emptyMark}><Ionicons name="basket-outline" size={32} color={AppColors.primaryDark} /></View>
@@ -62,7 +89,7 @@ export default function PantryScreen() {
               {item.expiryDate && <Text style={styles.itemDate}>{t.pantryBestBefore} {item.expiryDate}</Text>}
               <View style={styles.badgeSpace}><ExpiryBadge expiryDate={item.expiryDate} /></View>
             </View>
-            <TouchableOpacity style={styles.removeIcon} onPress={() => { setRemoveError(false); setPendingDelete(item); }} accessibilityRole="button" accessibilityLabel={t.pantryRemove + ': ' + item.name}>
+            <TouchableOpacity style={styles.removeIcon} onPress={() => requestDelete({ kind: 'item', item })} accessibilityRole="button" accessibilityLabel={t.pantryRemove + ': ' + item.name}>
               <Ionicons name="trash-outline" size={19} color={AppColors.textLight} />
             </TouchableOpacity>
           </View>
@@ -71,8 +98,14 @@ export default function PantryScreen() {
       <Modal visible={!!pendingDelete} transparent animationType="fade" onRequestClose={() => !removing && setPendingDelete(null)}>
         <View style={styles.modalOverlay}>
           <View accessibilityViewIsModal style={styles.modalCard}>
-            <Text accessibilityRole="header" style={styles.modalTitle}>{t.pantryRemoveTitle}</Text>
-            <Text style={styles.modalText}>{t.pantryRemoveConfirm(pendingDelete?.name ?? '')}</Text>
+            <Text accessibilityRole="header" style={styles.modalTitle}>
+              {pendingDelete?.kind === 'expired' ? t.pantryRemoveExpired : t.pantryRemoveTitle}
+            </Text>
+            <Text style={styles.modalText}>
+              {pendingDelete?.kind === 'expired'
+                ? t.pantryRemoveExpiredConfirm(pendingDelete.ids.length)
+                : t.pantryRemoveConfirm(pendingDelete?.item.name ?? '')}
+            </Text>
             {removeError && <Text accessibilityRole="alert" style={styles.error}>{t.saveError}</Text>}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setPendingDelete(null)} disabled={removing} accessibilityRole="button"><Text style={styles.cancelText}>{t.cancel}</Text></TouchableOpacity>
@@ -91,6 +124,8 @@ const styles = StyleSheet.create({
   center: { ...AppStyles.screen, justifyContent: 'center', alignItems: 'center' },
   addBtn: { ...AppStyles.iconButton, backgroundColor: AppColors.avocado },
   removeIcon: { ...AppStyles.iconButton, backgroundColor: AppColors.warmTint },
+  removeExpiredButton: { ...AppStyles.button, backgroundColor: AppColors.expiredBg, flexDirection: 'row', gap: 8, marginBottom: 12 },
+  removeExpiredText: { ...AppStyles.buttonText, color: AppColors.expired, flexShrink: 1, textAlign: 'center' },
   list: { paddingHorizontal: 24, paddingBottom: 28, flexGrow: 1 },
   card: { ...AppStyles.card, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 18, marginBottom: 12 },
   cardBody: { flex: 1, minWidth: 0 },
