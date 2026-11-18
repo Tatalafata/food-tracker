@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { parseRecipeNotes, RECIPE_NOTES_KEY } from '@/lib/recipe-notes';
 import { isRecipe } from '@/lib/recipes.mjs';
 
 const stores = {
@@ -7,6 +8,7 @@ const stores = {
   kitchen: '@chefsuggest:kitchen',
   dietary: '@chefsuggest:dietary_preferences',
   book: '@chefsuggest:recipe_book',
+  notes: RECIPE_NOTES_KEY,
   plans: '@chefsuggest:recipe_plans',
   notifications: '@chefsuggest:notif_prefs',
   language: '@freshtrack:language',
@@ -16,7 +18,7 @@ const fields = Object.keys(stores) as (keyof typeof stores)[];
 
 export interface ProfileBackup {
   version: 1;
-  data: Record<keyof typeof stores, string | null>;
+  data: Record<Exclude<keyof typeof stores, 'notes'>, string | null> & { notes?: string | null };
 }
 
 function object(value: unknown): value is Record<string, unknown> {
@@ -28,9 +30,11 @@ function identified(value: unknown): value is Record<string, unknown> & { id: st
 }
 
 function validRecord(field: keyof typeof stores, stored: unknown) {
+  if (field === 'notes' && stored === undefined) return true;
   if (stored === null) return true;
   if (typeof stored !== 'string') return false;
   if (field === 'language') return ['it', 'en', 'fr', 'de'].includes(stored);
+  if (field === 'notes') return Boolean(parseRecipeNotes(stored));
 
   const data: unknown = JSON.parse(stored);
   switch (field) {
@@ -89,6 +93,7 @@ export async function applyProfileRestore() {
   for (const field of fields) {
     if (field === 'pantry') continue;
     const value = backup.data[field];
+    if (value === undefined) continue; // Backups created before recipe notes leave local notes intact.
     if (value === null) absent.push(stores[field]);
     else entries.push([stores[field], value]);
   }

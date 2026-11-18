@@ -98,7 +98,7 @@ export default function ProfileBackupSection() {
     setConfirm(null);
     void run(async () => {
       await stageProfileRestore(copyToRestore.snapshot);
-      await reloadAppAsync('Restore ChefSuggest backup');
+      await reloadAppAsync('Restore Make It Dinner! backup');
     });
   }
 

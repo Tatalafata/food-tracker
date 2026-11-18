@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "ChefSuggest",
+    "name": "Make It Dinner!",
     "slug": "chefsuggest",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -40,7 +40,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "ChefSuggest needs camera access to scan grocery barcodes."
+          "cameraPermission": "Camera access is needed to scan grocery barcodes."
         }
       ],
       [

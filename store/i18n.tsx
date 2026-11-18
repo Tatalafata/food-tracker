@@ -33,7 +33,6 @@ export interface Translations {
     usage: string;
     loadError: string;
   };
-  addProductNoExpiryHint: string;
   dateYear: string;
   dateMonth: string;
   dateDay: string;
@@ -85,20 +84,7 @@ export interface Translations {
   scannerGrantAccess: string;
   scannerLookingUp: string;
   scannerAlignHint: string;
-  scannerConfirmTitle: string;
-  scannerBarcodeLabel: string;
-  scannerNameLabel: string;
-  scannerNamePlaceholder: string;
-  scannerExpiryLabel: string;
-  scannerAddBtn: string;
   scannerScanAgain: string;
-  scannerSuccess: (name: string) => string;
-  scannerAutoFilled: string;
-  scannerNotFound: string;
-  scannerMissingName: string;
-  scannerMissingNameMsg: string;
-  scannerInvalidDate: string;
-  scannerInvalidDateMsg: string;
   // Calendar
   calendarTitle: string;
   calendarSubtitle: string;
@@ -186,7 +172,6 @@ export interface Translations {
   addProductNameLabel: string;
   addProductNamePlaceholder: string;
   addProductExpiryLabel: string;
-  addProductNoExpiry: string;
   addProductAddBtn: string;
   addProductMissingName: string;
   addProductMissingNameMsg: string;
@@ -236,7 +221,6 @@ const en: Translations = {
     usage: 'Suggestions take your selected preferences into account. For allergies, check ingredients and product labels.',
     loadError: 'Dietary preferences could not be loaded. Reopen the app to try again.',
   },
-  addProductNoExpiryHint: 'For example: salt, spices or honey',
   scannerSettings: 'Open settings',
   recipesUnavailable: 'Recipe suggestions are not available yet. You can already choose your ingredients and preferences.',
   recipesNetworkError: 'Could not load recipes. Check your connection and try again.',
@@ -259,18 +243,10 @@ const en: Translations = {
   pantryEmptyText: 'Scan a barcode to add your first item.', pantryBestBefore: 'Best before:',
   scannerTitle: 'Scan Barcode', scannerSubtitle: 'Point at a product barcode',
   scannerCameraTitle: 'Camera Access Required',
-  scannerCameraText: 'ChefSuggest needs your camera to scan barcodes.',
+  scannerCameraText: 'Camera access is needed to scan barcodes.',
   scannerGrantAccess: 'Grant Access', scannerLookingUp: 'Looking up product...',
-  scannerAlignHint: 'Align barcode within the frame', scannerConfirmTitle: 'Confirm Item',
-  scannerBarcodeLabel: 'Barcode:', scannerNameLabel: 'Product Name',
-  scannerNamePlaceholder: 'e.g. Organic Whole Milk', scannerExpiryLabel: 'Expiry Date',
-  scannerAddBtn: 'Add to Pantry', scannerScanAgain: 'Scan Again',
-  scannerSuccess: (name) => `${name} added!`,
-  scannerAutoFilled: 'Auto-filled from product data — edit if incorrect.',
-  scannerNotFound: 'Not found on barcode — enter manually (YYYY-MM-DD).',
-  scannerMissingName: 'Missing name', scannerMissingNameMsg: 'Please enter a product name.',
-  scannerInvalidDate: 'Invalid date',
-  scannerInvalidDateMsg: 'Please enter the expiry date as YYYY-MM-DD.',
+  scannerAlignHint: 'Align barcode within the frame',
+  scannerScanAgain: 'Scan Again',
   calendarTitle: 'Expiry Calendar', calendarSubtitle: 'Dots mark items expiring on that day',
   calendarNothingOnDay: 'No items expire on this day.',
   calendarLegendExpired: 'Expired', calendarLegendSoon: 'Expiring soon', calendarLegendGood: 'Good',
@@ -311,7 +287,7 @@ const en: Translations = {
     eggFree: 'Egg Free', nutFree: 'Nut Free', lowCarb: 'Low Carb',
     keto: 'Keto', halal: 'Halal', kosher: 'Kosher',
   },
-  onboardingTitle: 'Welcome to ChefSuggest!',
+  onboardingTitle: 'Welcome to Make It Dinner!',
   onboardingSubtitle: "Let's stock your pantry to get started",
   onboardingStarterTitle: 'Your starter items',
   onboardingStarterSubtitle: "We'll add these to your pantry automatically",
@@ -330,7 +306,6 @@ const en: Translations = {
   addProductNameLabel: 'Product Name',
   addProductNamePlaceholder: 'e.g. Olive Oil',
   addProductExpiryLabel: 'Expiry Date',
-  addProductNoExpiry: 'No Expiration Date',
   addProductAddBtn: 'Add to Pantry',
   addProductMissingName: 'Missing name',
   addProductMissingNameMsg: 'Please enter a product name.',
@@ -375,7 +350,6 @@ const it: Translations = {
     usage: 'I suggerimenti tengono conto delle tue preferenze. In caso di allergie, controlla ingredienti ed etichette.',
     loadError: 'Non è stato possibile caricare le preferenze alimentari. Riapri l’app per riprovare.',
   },
-  addProductNoExpiryHint: 'Per esempio: sale, spezie o miele',
   scannerSettings: 'Apri le impostazioni',
   recipesUnavailable: 'I suggerimenti di ricette non sono ancora disponibili. Puoi già scegliere ingredienti e preferenze.',
   recipesNetworkError: 'Non è stato possibile caricare le ricette. Controlla la connessione e riprova.',
@@ -399,18 +373,10 @@ const it: Translations = {
   pantryBestBefore: 'Scadenza:',
   scannerTitle: 'Scansiona Codice', scannerSubtitle: 'Punta il codice a barre del prodotto',
   scannerCameraTitle: 'Accesso Fotocamera Necessario',
-  scannerCameraText: 'ChefSuggest ha bisogno della fotocamera per scansionare i codici a barre.',
+  scannerCameraText: 'Serve l’accesso alla fotocamera per scansionare i codici a barre.',
   scannerGrantAccess: 'Consenti Accesso', scannerLookingUp: 'Ricerca prodotto...',
-  scannerAlignHint: 'Allinea il codice a barre nel riquadro', scannerConfirmTitle: 'Conferma Articolo',
-  scannerBarcodeLabel: 'Codice a barre:', scannerNameLabel: 'Nome Prodotto',
-  scannerNamePlaceholder: 'es. Latte Intero Biologico', scannerExpiryLabel: 'Data di Scadenza',
-  scannerAddBtn: 'Aggiungi alla Dispensa', scannerScanAgain: 'Scansiona di Nuovo',
-  scannerSuccess: (name) => `${name} aggiunto!`,
-  scannerAutoFilled: 'Compilato automaticamente — modifica se necessario.',
-  scannerNotFound: 'Non trovato — inserisci manualmente (AAAA-MM-GG).',
-  scannerMissingName: 'Nome mancante', scannerMissingNameMsg: 'Inserisci il nome del prodotto.',
-  scannerInvalidDate: 'Data non valida',
-  scannerInvalidDateMsg: 'Inserisci la data nel formato AAAA-MM-GG.',
+  scannerAlignHint: 'Allinea il codice a barre nel riquadro',
+  scannerScanAgain: 'Scansiona di Nuovo',
   calendarTitle: 'Calendario Scadenze', calendarSubtitle: 'I punti indicano gli articoli in scadenza',
   calendarNothingOnDay: 'Nessun articolo scade in questo giorno.',
   calendarLegendExpired: 'Scaduto', calendarLegendSoon: 'In scadenza', calendarLegendGood: 'Fresco',
@@ -451,7 +417,7 @@ const it: Translations = {
     eggFree: 'Senza Uova', nutFree: 'Senza Frutta Secca', lowCarb: 'Low Carb',
     keto: 'Keto', halal: 'Halal', kosher: 'Kosher',
   },
-  onboardingTitle: 'Benvenuto in ChefSuggest!',
+  onboardingTitle: 'Benvenuto in Make It Dinner!',
   onboardingSubtitle: 'Riforniamo la tua dispensa per iniziare',
   onboardingStarterTitle: 'I tuoi articoli di base',
   onboardingStarterSubtitle: 'Li aggiungeremo automaticamente alla tua dispensa',
@@ -470,7 +436,6 @@ const it: Translations = {
   addProductNameLabel: 'Nome Prodotto',
   addProductNamePlaceholder: 'es. Olio d\'Oliva',
   addProductExpiryLabel: 'Data di Scadenza',
-  addProductNoExpiry: 'Senza Data di Scadenza',
   addProductAddBtn: 'Aggiungi alla Dispensa',
   addProductMissingName: 'Nome mancante',
   addProductMissingNameMsg: 'Inserisci il nome del prodotto.',
@@ -515,7 +480,6 @@ const fr: Translations = {
     usage: 'Les suggestions tiennent compte de vos préférences. En cas d’allergie, vérifiez les ingrédients et les étiquettes.',
     loadError: 'Impossible de charger les préférences alimentaires. Rouvrez l’application pour réessayer.',
   },
-  addProductNoExpiryHint: 'Par exemple : sel, épices ou miel',
   scannerSettings: 'Ouvrir les réglages',
   recipesUnavailable: 'Les suggestions de recettes ne sont pas encore disponibles. Vous pouvez déjà choisir vos ingrédients et préférences.',
   recipesNetworkError: 'Impossible de charger les recettes. Vérifiez votre connexion et réessayez.',
@@ -540,18 +504,10 @@ const fr: Translations = {
   pantryBestBefore: 'À consommer avant :',
   scannerTitle: 'Scanner un Code-barres', scannerSubtitle: 'Pointez vers le code-barres du produit',
   scannerCameraTitle: 'Accès à la Caméra Requis',
-  scannerCameraText: 'ChefSuggest a besoin de la caméra pour scanner les codes-barres.',
+  scannerCameraText: 'L’accès à la caméra est nécessaire pour scanner les codes-barres.',
   scannerGrantAccess: "Autoriser l'Accès", scannerLookingUp: 'Recherche du produit...',
-  scannerAlignHint: 'Alignez le code-barres dans le cadre', scannerConfirmTitle: "Confirmer l'Article",
-  scannerBarcodeLabel: 'Code-barres :', scannerNameLabel: 'Nom du produit',
-  scannerNamePlaceholder: 'ex. Lait entier bio', scannerExpiryLabel: "Date d'expiration",
-  scannerAddBtn: 'Ajouter au Garde-manger', scannerScanAgain: 'Scanner à Nouveau',
-  scannerSuccess: (name) => `${name} ajouté !`,
-  scannerAutoFilled: 'Rempli automatiquement — modifiez si nécessaire.',
-  scannerNotFound: 'Non trouvé — saisir manuellement (AAAA-MM-JJ).',
-  scannerMissingName: 'Nom manquant', scannerMissingNameMsg: 'Veuillez saisir un nom de produit.',
-  scannerInvalidDate: 'Date invalide',
-  scannerInvalidDateMsg: 'Veuillez saisir la date au format AAAA-MM-JJ.',
+  scannerAlignHint: 'Alignez le code-barres dans le cadre',
+  scannerScanAgain: 'Scanner à Nouveau',
   calendarTitle: 'Calendrier des Expirations', calendarSubtitle: 'Les points indiquent les articles expirant ce jour',
   calendarNothingOnDay: "Aucun article n'expire ce jour.",
   calendarLegendExpired: 'Expiré', calendarLegendSoon: 'Expire bientôt', calendarLegendGood: 'Frais',
@@ -593,7 +549,7 @@ const fr: Translations = {
     eggFree: 'Sans Œufs', nutFree: 'Sans Noix', lowCarb: 'Faible en Glucides',
     keto: 'Keto', halal: 'Halal', kosher: 'Casher',
   },
-  onboardingTitle: 'Bienvenue dans ChefSuggest !',
+  onboardingTitle: 'Bienvenue dans Make It Dinner!',
   onboardingSubtitle: 'Remplissons votre garde-manger pour commencer',
   onboardingStarterTitle: 'Vos articles de départ',
   onboardingStarterSubtitle: 'Nous les ajouterons automatiquement à votre garde-manger',
@@ -612,7 +568,6 @@ const fr: Translations = {
   addProductNameLabel: 'Nom du produit',
   addProductNamePlaceholder: "ex. Huile d'Olive",
   addProductExpiryLabel: "Date d'expiration",
-  addProductNoExpiry: "Pas de Date d'Expiration",
   addProductAddBtn: 'Ajouter au Garde-manger',
   addProductMissingName: 'Nom manquant',
   addProductMissingNameMsg: 'Veuillez saisir un nom de produit.',
@@ -657,7 +612,6 @@ const de: Translations = {
     usage: 'Die Vorschläge berücksichtigen deine Vorlieben. Prüfe bei Allergien die Zutaten und Produktetiketten.',
     loadError: 'Die Ernährungsvorgaben konnten nicht geladen werden. Öffne die App erneut.',
   },
-  addProductNoExpiryHint: 'Zum Beispiel: Salz, Gewürze oder Honig',
   scannerSettings: 'Einstellungen öffnen',
   recipesUnavailable: 'Rezeptvorschläge sind noch nicht verfügbar. Zutaten und Vorlieben können bereits ausgewählt werden.',
   recipesNetworkError: 'Rezepte konnten nicht geladen werden. Verbindung prüfen und erneut versuchen.',
@@ -682,18 +636,10 @@ const de: Translations = {
   pantryBestBefore: 'Mindesthaltbar bis:',
   scannerTitle: 'Barcode Scannen', scannerSubtitle: 'Richten Sie die Kamera auf den Barcode',
   scannerCameraTitle: 'Kamerazugriff Erforderlich',
-  scannerCameraText: 'ChefSuggest benötigt die Kamera zum Scannen von Barcodes.',
+  scannerCameraText: 'Zum Scannen von Barcodes ist der Zugriff auf die Kamera nötig.',
   scannerGrantAccess: 'Zugriff Gewähren', scannerLookingUp: 'Produkt wird gesucht...',
-  scannerAlignHint: 'Barcode im Rahmen ausrichten', scannerConfirmTitle: 'Artikel Bestätigen',
-  scannerBarcodeLabel: 'Barcode:', scannerNameLabel: 'Produktname',
-  scannerNamePlaceholder: 'z.B. Bio-Vollmilch', scannerExpiryLabel: 'Ablaufdatum',
-  scannerAddBtn: 'Zum Vorrat hinzufügen', scannerScanAgain: 'Erneut Scannen',
-  scannerSuccess: (name) => `${name} hinzugefügt!`,
-  scannerAutoFilled: 'Automatisch ausgefüllt — bei Bedarf bearbeiten.',
-  scannerNotFound: 'Nicht gefunden — manuell eingeben (JJJJ-MM-TT).',
-  scannerMissingName: 'Name fehlt', scannerMissingNameMsg: 'Bitte geben Sie einen Produktnamen ein.',
-  scannerInvalidDate: 'Ungültiges Datum',
-  scannerInvalidDateMsg: 'Bitte geben Sie das Datum im Format JJJJ-MM-TT ein.',
+  scannerAlignHint: 'Barcode im Rahmen ausrichten',
+  scannerScanAgain: 'Erneut Scannen',
   calendarTitle: 'Ablaufdatum-Kalender', calendarSubtitle: 'Punkte markieren ablaufende Artikel',
   calendarNothingOnDay: 'An diesem Tag läuft kein Artikel ab.',
   calendarLegendExpired: 'Abgelaufen', calendarLegendSoon: 'Läuft bald ab', calendarLegendGood: 'Frisch',
@@ -735,7 +681,7 @@ const de: Translations = {
     eggFree: 'Eierfrei', nutFree: 'Nussfrei', lowCarb: 'Low Carb',
     keto: 'Keto', halal: 'Halal', kosher: 'Koscher',
   },
-  onboardingTitle: 'Willkommen bei ChefSuggest!',
+  onboardingTitle: 'Willkommen bei Make It Dinner!',
   onboardingSubtitle: 'Lassen Sie uns Ihren Vorrat auffüllen',
   onboardingStarterTitle: 'Ihre Starterartikel',
   onboardingStarterSubtitle: 'Diese werden automatisch zu Ihrem Vorrat hinzugefügt',
@@ -754,7 +700,6 @@ const de: Translations = {
   addProductNameLabel: 'Produktname',
   addProductNamePlaceholder: 'z.B. Olivenöl',
   addProductExpiryLabel: 'Ablaufdatum',
-  addProductNoExpiry: 'Kein Ablaufdatum',
   addProductAddBtn: 'Zum Vorrat hinzufügen',
   addProductMissingName: 'Name fehlt',
   addProductMissingNameMsg: 'Bitte geben Sie einen Produktnamen ein.',

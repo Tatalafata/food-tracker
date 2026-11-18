@@ -108,7 +108,7 @@ export function NotificationPrefsProvider({ children }: { children: React.ReactN
   const permissionReady = permission !== null;
   const summary = useMemo<Reminder[]>(() => prefs.dailySummaryEnabled && prefs.expiryDays.length > 0 ? [{
     key: language,
-    title: `ChefSuggest · ${t.settingsNotifSummary}`,
+    title: `Make It Dinner! · ${t.settingsNotifSummary}`,
     body: planningCopy[language].summaryAlert,
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 9, minute: 0 },
   }] : [], [language, prefs.dailySummaryEnabled, prefs.expiryDays.length, t.settingsNotifSummary]);

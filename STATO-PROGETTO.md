@@ -1,4 +1,4 @@
-# Promemoria ChefSuggest
+# Promemoria Make It Dinner!
 
 Aggiornato il 18 novembre 2026. Questo file permette alle nuove chat di riprendere il lavoro senza dipendere dalla memoria della conversazione. Non inserire credenziali o dati personali.
 
@@ -177,3 +177,10 @@ Ricette complete con porzioni concordate e implementate. Seguire le prossime ric
 - Collegato e riattivato il progetto Supabase **food app**. Pubblicata la funzione `recipes`, che riusa il generatore del PC. L’app può creare una sessione ospite e conserva il token di rinnovo in SecureStore. La beta usa soltanto l’URL della funzione e la chiave Publishable del progetto.
 - Il database riserva una quota prima della chiamata a OpenAI. Verificati permessi, intervallo di 30 secondi per ospite, cinque richieste per ospite e 20 globali al giorno UTC in una transazione annullata. Verificati il rifiuto senza sessione, l’accesso ospite e l’arrivo della prova a OpenAI. Verifiche locali, 13 test del servizio ed export Android e iOS riusciti.
 - Dopo l’autorizzazione della product manager, la chiave OpenAI del PC è stata salvata nel segreto dedicato `CHEFSUGGEST_OPENAI_API_KEY` di Supabase. Una sessione ospite ha ricevuto cinque ricette valide con entrambi i filtri Facili e Veloci attivi. L’aggiornamento Android con il collegamento online è in preparazione insieme ad altre modifiche richieste dalla product manager. La prova sul telefono resta da fare.
+
+### Make It Dinner! 1.0.3 — nome, note e scanner
+
+- Il nome scelto dalla product manager è **Make It Dinner!**. Aggiornati il nome del pacchetto visibile sul dispositivo, la Home, il tutorial e i promemoria. Gli identificativi tecnici e le chiavi dei dati locali mantengono la compatibilità con la beta precedente.
+- Il dettaglio di una ricetta contiene **Note personali**. **Ricettario → Note** riapre le ricette con appunti anche dopo aver generato un nuovo gruppo. Le note si modificano oppure si cancellano svuotando il campo e salvando. Vengono salvate sul dispositivo e sono compatibili con il formato di backup. La copia online tramite codice email richiede ancora configurazione e una prova su due telefoni.
+- Lo scanner cerca il nome del prodotto in dispensa e su Open Food Facts, con digitazione del codice come alternativa alla fotocamera. Per l’inserimento manuale o tramite scanner, la scadenza rimane vuota finché non viene confermata la data stampata sulla confezione. Da Dispensa si possono modificare o rimuovere date già salvate.
+- Nel browser a 360 × 760 verificati salvataggio di note distinte in due tipi di ricette di Ispirazione, recupero dopo ricarica e rimozione di una nota. Provati un codice riconosciuto e uno assente dal catalogo, la conferma di una data, la sua rimozione e la riapertura di un prodotto senza data. Fotocamera, promemoria e aggiornamento sopra la versione precedente restano da provare su telefono.

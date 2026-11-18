@@ -112,7 +112,7 @@ async function main() {
       freePort ??= port;
     } else if (await isThisProject(port)) {
       const url = `http://localhost:${port}`;
-      console.log(`ChefSuggest e gia avviata: ${url}`);
+      console.log(`Make It Dinner! e gia avviata: ${url}`);
       console.log('Le modifiche appariranno nella stessa anteprima.');
       if (!noOpen) openBrowser(url);
       return;

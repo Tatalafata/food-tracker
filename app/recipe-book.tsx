@@ -10,14 +10,16 @@ import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
 import { AppColors, AppStyles } from '@/constants/theme';
 import { inspirationRecipes } from '@/lib/inspiration';
-import type { OnlineInspiration } from '@/lib/inspiration-search';
+import { inspirationIndex, type OnlineInspiration } from '@/lib/inspiration-search';
 import { Recipe } from '@/lib/recipes.mjs';
 import { useI18n } from '@/store/i18n';
 import { recipeIdentity, useRecipeBook } from '@/store/recipe-book';
 import { recipeBookCopy } from '@/store/recipe-book-copy';
+import { recipeNoteIdentity, useRecipeNotes } from '@/store/recipe-notes';
+import { recipeNotesCopy } from '@/store/recipe-notes-copy';
 
-type BookTab = 'favorites' | 'history' | 'inspiration';
-const tabs: BookTab[] = ['favorites', 'history', 'inspiration'];
+type BookTab = 'favorites' | 'history' | 'notes' | 'inspiration';
+const tabs: BookTab[] = ['favorites', 'history', 'notes', 'inspiration'];
 
 interface RecipeRow {
   recipe: Recipe;
@@ -29,8 +31,10 @@ export default function RecipeBookScreen() {
   const { language } = useI18n();
   const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
   const { saved, ready, loadError } = useRecipeBook();
+  const { notes, ready: notesReady, loadError: notesLoadError } = useRecipeNotes();
   const copy = recipeBookCopy[language];
-  const [tab, setTab] = useState<BookTab>(initialTab === 'inspiration' || initialTab === 'history' ? initialTab : 'favorites');
+  const notesCopy = recipeNotesCopy[language];
+  const [tab, setTab] = useState<BookTab>(initialTab === 'inspiration' || initialTab === 'history' || initialTab === 'notes' ? initialTab : 'favorites');
   const [opened, setOpened] = useState<RecipeRow | null>(null);
   const [online, setOnline] = useState<OnlineInspiration | null>(null);
   const dateFormat = new Intl.DateTimeFormat(language, { dateStyle: 'medium', timeStyle: 'short' });
@@ -44,7 +48,12 @@ export default function RecipeBookScreen() {
     .sort((a, b) => (b[mark] ?? '').localeCompare(a[mark] ?? ''))
     .map(row => ({ ...row, recipe: recipeInLanguage(row.recipe) }));
   const emptyText = tab === 'favorites' ? copy.emptyFavorites : copy.emptyCooked;
-  const loading = tab !== 'inspiration' && !ready && !loadError;
+  const loading = !ready && !loadError;
+
+  function openArticle(article: { title: string; url: string; language: string }) {
+    const record = inspirationIndex(language).find((entry): entry is OnlineInspiration => entry.url === article.url);
+    setOnline(record ?? { ...article, id: article.url, tags: [] });
+  }
 
   function back() {
     if (router.canGoBack()) router.back();
@@ -64,12 +73,41 @@ export default function RecipeBookScreen() {
           <TouchableOpacity key={item} style={[styles.tab, item === tab && styles.selected]}
             accessibilityRole="tab" accessibilityState={{ selected: item === tab }} aria-selected={item === tab}
             onPress={() => setTab(item)}>
-            <Text style={[styles.label, item === tab && styles.selectedLabel]}>{copy[item]}</Text>
+            <Text style={[styles.label, item === tab && styles.selectedLabel]}>{item === 'notes' ? notesCopy.tab : copy[item]}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      {tab === 'inspiration' ? <InspirationCatalog onOpenRecipe={recipe => setOpened({ recipe })} onOpenOnline={setOnline} />
-        : loading ? <ActivityIndicator color={AppColors.primaryDark} style={styles.status} /> : (
+      {tab === 'inspiration' && <InspirationCatalog onOpenRecipe={recipe => setOpened({ recipe })} onOpenOnline={setOnline} />}
+      {tab === 'notes' && (!notesReady && !notesLoadError ? <ActivityIndicator color={AppColors.primaryDark} style={styles.status} /> : (
+        <FlatList
+          key="notes"
+          contentContainerStyle={styles.list}
+          data={Object.values(notes).reverse()}
+          keyExtractor={recipeNoteIdentity}
+          ListEmptyComponent={<Text accessibilityRole={notesLoadError ? 'alert' : undefined} style={styles.status}>
+            {notesLoadError ? notesCopy.readError : notesCopy.empty}
+          </Text>}
+          renderItem={({ item }) => {
+            const article = 'article' in item ? item.article : null;
+            const recipe = 'recipe' in item ? recipeInLanguage(item.recipe) : null;
+            const title = recipe?.name ?? article?.title;
+            return (
+              <TouchableOpacity style={styles.card} accessibilityRole="button" accessibilityLabel={title}
+                onPress={() => {
+                  if ('recipe' in item) setOpened({ recipe: recipeInLanguage(item.recipe), servings: item.servings });
+                  else openArticle(item.article);
+                }}>
+                <View style={styles.cardTitleRow}>
+                  <Text style={styles.cardTitle}>{title}</Text>
+                  <Ionicons name="chevron-forward" color={AppColors.primaryDark} size={18} />
+                </View>
+                <Text style={styles.cardBody} numberOfLines={3}>{item.text}</Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      ))}
+      {(tab === 'favorites' || tab === 'history') && (loading ? <ActivityIndicator color={AppColors.primaryDark} style={styles.status} /> : (
         <FlatList
           key={tab}
           contentContainerStyle={styles.list}
@@ -100,7 +138,7 @@ export default function RecipeBookScreen() {
             </TouchableOpacity>
           )}
         />
-      )}
+      ))}
       {online && <OnlineRecipeDetail entry={online} onClose={() => setOnline(null)} />}
       {opened && (
         <RecipeDetail

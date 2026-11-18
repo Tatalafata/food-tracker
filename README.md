@@ -1,4 +1,4 @@
-# ChefSuggest / Food Tracker
+# Make It Dinner! / Food Tracker
 
 Proof of concept per gestire la dispensa, controllare le scadenze e ottenere idee per ricette. Le destinazioni principali sono **Android e iOS**; l'anteprima web aiuta a vedere subito le modifiche.
 

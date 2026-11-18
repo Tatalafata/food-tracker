@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -22,6 +21,7 @@ import { AppColors, AppStyles } from '@/constants/theme';
 import { localDateKey, localReminderDate } from '@/lib/local-date';
 import { useI18n } from '@/store/i18n';
 import { PantryItem, usePantry } from '@/store/pantry';
+import { scannerCopy } from '@/store/scanner-copy';
 
 // ─── Date Picker Wheel ────────────────────────────────────────────────────────
 
@@ -125,7 +125,7 @@ function DatePickerModal({
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const now = new Date();
-  const firstYear = Math.min(now.getFullYear(), initialDate.getFullYear());
+  const firstYear = Math.min(now.getFullYear() - 1, initialDate.getFullYear());
   const years = range(firstYear, Math.max(now.getFullYear() + 15, initialDate.getFullYear()));
   const months = range(1, 12);
 
@@ -197,7 +197,7 @@ function DatePickerModal({
 // ─── Add Product Screen ───────────────────────────────────────────────────────
 
 export default function AddProductScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, barcode, name, lookup } = useLocalSearchParams<{ id?: string; barcode?: string; name?: string; lookup?: string }>();
   const { items, loading } = usePantry();
   const { t } = useI18n();
   const item = typeof id === 'string' ? items.find(product => product.id === id) : undefined;
@@ -215,7 +215,10 @@ export default function AddProductScreen() {
       </SafeAreaView>
     );
   }
-  return <ProductForm key={item?.id ?? 'new'} item={item} />;
+  const scan = typeof barcode === 'string' && !item ? {
+    barcode, name: typeof name === 'string' ? name : '', lookup,
+  } : undefined;
+  return <ProductForm key={item?.id ?? scan?.barcode ?? 'new'} item={item} scan={scan} />;
 }
 
 function closeProductForm() {
@@ -223,19 +226,14 @@ function closeProductForm() {
   else router.replace('/pantry');
 }
 
-function ProductForm({ item }: { item?: PantryItem }) {
+function ProductForm({ item, scan }: { item?: PantryItem; scan?: { barcode: string; name: string; lookup?: string } }) {
   const { addItem, updateItem } = usePantry();
-  const { t } = useI18n();
-  const [name, setName] = useState(item?.name ?? '');
+  const { language, t } = useI18n();
+  const scanText = scannerCopy[language];
+  const [name, setName] = useState(item?.name ?? scan?.name ?? '');
   const [notes, setNotes] = useState(item?.notes ?? '');
-  const [barcode, setBarcode] = useState(item?.barcode ?? '');
-  const [noExpiry, setNoExpiry] = useState(!!item && !item.expiryDate);
-  const [formattedDate, setFormattedDate] = useState(() => {
-    if (item?.expiryDate) return item.expiryDate;
-    const d = new Date();
-    d.setMonth(d.getMonth() + 6);
-    return localDateKey(d);
-  });
+  const [barcode, setBarcode] = useState(item?.barcode ?? scan?.barcode ?? '');
+  const [formattedDate, setFormattedDate] = useState(item?.expiryDate ?? '');
   const [pickerVisible, setPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -254,7 +252,7 @@ function ProductForm({ item }: { item?: PantryItem }) {
       const fields = {
         name: name.trim(),
         barcode: barcode.trim() || undefined,
-        expiryDate: noExpiry ? undefined : formattedDate,
+        expiryDate: formattedDate || undefined,
         notes: notes.trim() || undefined,
       };
       if (item) {
@@ -266,7 +264,6 @@ function ProductForm({ item }: { item?: PantryItem }) {
       setSavedName(name.trim());
       setSuccess(true);
       setName('');
-      setNoExpiry(false);
       setTimeout(() => {
         setSuccess(false);
         closeProductForm();
@@ -301,6 +298,7 @@ function ProductForm({ item }: { item?: PantryItem }) {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+          {scan && !scan.name && <Text style={styles.hint}>{scan.lookup === 'unavailable' ? scanText.unavailable : scanText.notFound}</Text>}
           <Text style={styles.label}>{t.addProductNameLabel}</Text>
           <TextInput
             accessibilityLabel={t.addProductNameLabel}
@@ -310,43 +308,28 @@ function ProductForm({ item }: { item?: PantryItem }) {
             placeholder={t.addProductNamePlaceholder}
             placeholderTextColor={AppColors.textLight}
             returnKeyType="done"
-            autoFocus={!item}
+            autoFocus={!item && !scan?.name}
             editable={!saving}
           />
 
-          {/* No Expiry Toggle */}
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleInfo}>
-              <Text style={styles.toggleLabel}>{t.addProductNoExpiry}</Text>
-              <Text style={styles.toggleSubtitle}>{t.addProductNoExpiryHint}</Text>
-            </View>
-            <Switch
-              accessibilityLabel={t.addProductNoExpiry}
-              disabled={saving}
-              value={noExpiry}
-              onValueChange={setNoExpiry}
-              trackColor={{ false: AppColors.border, true: AppColors.avocado }}
-              thumbColor={AppColors.white}
-            />
-          </View>
-
-          {!noExpiry && (
-            <>
-              <Text style={styles.label}>{t.addProductExpiryLabel}</Text>
-              <TouchableOpacity
-                style={styles.datePicker}
-                accessibilityRole="button"
-                accessibilityLabel={t.addProductPickDate + ': ' + formattedDate}
-                disabled={saving}
-                onPress={() => setPickerVisible(true)}
-                activeOpacity={0.7}>
-                <Text style={styles.datePickerText}>{formattedDate}</Text>
-                <Ionicons name="calendar-outline" size={21} color={AppColors.primaryDark} />
+          <Text style={styles.label}>{t.addProductExpiryLabel}</Text>
+          <View style={styles.dateRow}>
+            <TouchableOpacity style={styles.datePicker} accessibilityRole="button"
+              accessibilityLabel={formattedDate ? t.addProductPickDate + ' ' + formattedDate : t.addProductPickDate}
+              disabled={saving} onPress={() => setPickerVisible(true)}>
+              <Text style={styles.datePickerText}>{formattedDate || t.addProductPickDate}</Text>
+              <Ionicons name="calendar-outline" size={21} color={AppColors.primaryDark} />
+            </TouchableOpacity>
+            {!!formattedDate && (
+              <TouchableOpacity accessibilityRole="button" accessibilityLabel={scanText.removeDate}
+                style={AppStyles.iconButton} disabled={saving} onPress={() => setFormattedDate('')}>
+                <Ionicons name="close" size={20} color={AppColors.primaryDark} />
               </TouchableOpacity>
-            </>
-          )}
+            )}
+          </View>
+          <Text style={styles.hint}>{scanText.expiryHint}</Text>
 
-          {item && (
+          {(item || scan) && (
             <>
               <Text style={styles.label}>{t.productEdit.barcode}</Text>
               <TextInput
@@ -407,11 +390,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '500', color: AppColors.text, marginTop: 24, marginBottom: 10 },
   input: { ...AppStyles.input },
   notes: { minHeight: 96, textAlignVertical: 'top' },
-  toggleRow: { ...AppStyles.card, backgroundColor: AppColors.limeTint, flexDirection: 'row', alignItems: 'center', marginTop: 24, padding: 20, gap: 12 },
-  toggleInfo: { flex: 1 },
-  toggleLabel: { fontSize: 15, lineHeight: 22, fontWeight: '500', color: AppColors.text },
-  toggleSubtitle: { fontSize: 13, lineHeight: 19, color: AppColors.textLight, marginTop: 6 },
-  datePicker: { ...AppStyles.input, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  hint: { fontSize: 13, lineHeight: 19, color: AppColors.textLight, marginTop: 4 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  datePicker: { ...AppStyles.input, flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   datePickerText: { fontSize: 16, color: AppColors.text, fontWeight: '400' },
   addBtn: { ...AppStyles.button, marginTop: 32 },
   addBtnDisabled: { opacity: 0.5 },

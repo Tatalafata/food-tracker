@@ -16,7 +16,7 @@ type Scope = 'expiry' | 'recipe' | 'summary' | 'timer';
 export async function prepareReminderChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
-      name: 'ChefSuggest',
+      name: 'Make It Dinner!',
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
@@ -68,7 +68,7 @@ export function useScheduledReminders(
           trigger: { ...reminder.trigger, channelId: REMINDER_CHANNEL },
         });
       }
-    }).catch(() => console.warn('Could not update ChefSuggest reminders'));
+    }).catch(() => console.warn('Could not update Make It Dinner! reminders'));
     return () => { stale = true; };
   }, [scope, reminders, ready, allowed, legacySummaryId]);
 }

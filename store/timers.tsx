@@ -122,7 +122,7 @@ export function TimersProvider({ children }: { children: ReactNode }) {
 
   const reminders = useMemo<Reminder[]>(() => state.timers.flatMap(timer => timer.endsAt === null ? [] : [{
     key: timer.id + '/' + timer.endsAt,
-    title: 'ChefSuggest · ' + timerCopy[language].finished,
+    title: 'Make It Dinner! · ' + timerCopy[language].finished,
     body: timer.name,
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE as const, date: timer.endsAt },
   }]), [state.timers, language]);

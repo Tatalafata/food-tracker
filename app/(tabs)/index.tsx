@@ -63,7 +63,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <>
-            <ScreenHeader title="ChefSuggest" subtitle={t.homeSubtitle(items.length)} icon="leaf-outline" />
+            <ScreenHeader title="Make It Dinner!" subtitle={t.homeSubtitle(items.length)} icon="leaf-outline" />
             <View style={styles.shopping}><KitchenLink kind="shopping" /></View>
             <HomeTimers />
             <View style={styles.overview}>

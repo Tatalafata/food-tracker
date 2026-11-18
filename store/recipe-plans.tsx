@@ -80,7 +80,7 @@ export function RecipePlansProvider({ children }: { children: React.ReactNode })
     const date = plan.reminderTime && localReminderDate(plan.day, plan.reminderTime);
     return date ? [{
       key: `${plan.id}/${date.getTime()}/${language}`,
-      title: `ChefSuggest · ${planningCopy[language].reminder}`,
+      title: `Make It Dinner! · ${planningCopy[language].reminder}`,
       body: plan.recipe.name,
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE as const, date },
     }] : [];

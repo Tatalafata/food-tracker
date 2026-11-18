@@ -1,10 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TimerDock } from '@/components/CookingTimers';
+import RecipeNotes from '@/components/RecipeNotes';
 import { AppColors, AppStyles } from '@/constants/theme';
 import inspirationText from '@/lib/data/inspiration-text.json';
 import { inspirationIndex, type OnlineInspiration } from '@/lib/inspiration-search';
@@ -74,56 +75,60 @@ export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineIn
           </TouchableOpacity>
         </View>
         {article ? (
-          <FlatList
-            key={current.url}
-            data={article.blocks}
-            keyExtractor={(_, index) => String(index)}
-            contentContainerStyle={[styles.content, !hidden && timers.length > 0 && styles.timerSpace]}
-            ListHeaderComponent={
-              <>
-                {current.photo && <Image source={current.photo.url} style={styles.photo} contentFit="cover" cachePolicy="disk" />}
-                {(current.minutes !== undefined || current.language !== language) && (
-                  <View style={styles.meta}>
-                    {current.minutes !== undefined && <Text style={styles.metaText}>{t.recipeEstimatedTime(current.minutes)}</Text>}
-                    {current.language !== language && <Text style={styles.metaText}>{current.language.toUpperCase()}</Text>}
+          <KeyboardAvoidingView style={styles.scroll} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <FlatList
+              key={current.url}
+              data={article.blocks}
+              keyExtractor={(_, index) => String(index)}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={[styles.content, !hidden && timers.length > 0 && styles.timerSpace]}
+              ListHeaderComponent={
+                <>
+                  {current.photo && <Image source={current.photo.url} style={styles.photo} contentFit="cover" cachePolicy="disk" />}
+                  {(current.minutes !== undefined || current.language !== language) && (
+                    <View style={styles.meta}>
+                      {current.minutes !== undefined && <Text style={styles.metaText}>{t.recipeEstimatedTime(current.minutes)}</Text>}
+                      {current.language !== language && <Text style={styles.metaText}>{current.language.toUpperCase()}</Text>}
+                    </View>
+                  )}
+                  <RecipeNotes target={{ article: { title: current.title, url: current.url, language: current.language } }} />
+                </>
+              }
+              renderItem={({ item }) => {
+                if (item.kind === 'heading') return <Text accessibilityRole="header" style={styles.heading}>{item.text}</Text>;
+                if (item.kind === 'paragraph') return <Text selectable style={styles.paragraph}>{item.text}</Text>;
+                const key = item.href && wikiRecipeKey(item.href, current.url);
+                const next = key ? related.get(key) : undefined;
+                const action = next && !trail.some(visited => visited.url === next.url);
+                return (
+                  <View style={[styles.row, { paddingLeft: Math.min(item.depth, 3) * 10 }]}>
+                    <Text style={styles.marker}>{item.marker}</Text>
+                    {action ? (
+                      <TouchableOpacity accessibilityRole="button" accessibilityLabel={item.text} style={styles.related} onPress={() => follow(next)}>
+                        <Text style={[styles.item, styles.link]}>{item.text}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={AppColors.primaryDark} />
+                      </TouchableOpacity>
+                    ) : <Text selectable style={styles.item}>{item.text}</Text>}
                   </View>
-                )}
-              </>
-            }
-            renderItem={({ item }) => {
-              if (item.kind === 'heading') return <Text accessibilityRole="header" style={styles.heading}>{item.text}</Text>;
-              if (item.kind === 'paragraph') return <Text selectable style={styles.paragraph}>{item.text}</Text>;
-              const key = item.href && wikiRecipeKey(item.href, current.url);
-              const next = key ? related.get(key) : undefined;
-              const action = next && !trail.some(visited => visited.url === next.url);
-              return (
-                <View style={[styles.row, { paddingLeft: Math.min(item.depth, 3) * 10 }]}>
-                  <Text style={styles.marker}>{item.marker}</Text>
-                  {action ? (
-                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={item.text} style={styles.related} onPress={() => follow(next)}>
-                      <Text style={[styles.item, styles.link]}>{item.text}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={AppColors.primaryDark} />
+                );
+              }}
+              ListFooterComponent={
+                <View style={styles.attribution}>
+                  <Text style={styles.metaText}>{copy.sourceText}</Text>
+                  <View style={styles.meta}>
+                    <TouchableOpacity accessibilityRole="link" style={styles.source}
+                      onPress={() => void Linking.openURL(article.source).catch(() => {})}>
+                      <Text style={styles.link}>Wikibooks</Text>
                     </TouchableOpacity>
-                  ) : <Text selectable style={styles.item}>{item.text}</Text>}
+                    <TouchableOpacity accessibilityRole="link" style={styles.source}
+                      onPress={() => void Linking.openURL('https://creativecommons.org/licenses/by-sa/4.0/').catch(() => {})}>
+                      <Text style={styles.link}>CC BY-SA 4.0</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              );
-            }}
-            ListFooterComponent={
-              <View style={styles.attribution}>
-                <Text style={styles.metaText}>{copy.sourceText}</Text>
-                <View style={styles.meta}>
-                  <TouchableOpacity accessibilityRole="link" style={styles.source}
-                    onPress={() => void Linking.openURL(article.source).catch(() => {})}>
-                    <Text style={styles.link}>Wikibooks</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity accessibilityRole="link" style={styles.source}
-                    onPress={() => void Linking.openURL('https://creativecommons.org/licenses/by-sa/4.0/').catch(() => {})}>
-                    <Text style={styles.link}>CC BY-SA 4.0</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            }
-          />
+              }
+            />
+          </KeyboardAvoidingView>
         ) : !resolved ? <ActivityIndicator style={styles.waiting} size="large" color={AppColors.primaryDark} /> : (
           <View style={styles.error}>
             <Text accessibilityRole="alert" style={styles.paragraph}>{copy.readError}</Text>
@@ -140,6 +145,7 @@ export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineIn
 }
 
 const styles = StyleSheet.create({
+  scroll: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 18 },
   title: { flex: 1, color: AppColors.text, fontSize: 24, lineHeight: 29, fontWeight: '700' },
   content: { paddingHorizontal: 20, paddingBottom: 32 },

@@ -86,7 +86,7 @@ export function PantryProvider({ children }: { children: React.ReactNode }) {
       date.setDate(date.getDate() - days);
       return {
         key: `${item.id}/${date.getTime()}/${language}`,
-        title: `ChefSuggest · ${t.settingsNotifEnabled}`,
+        title: `Make It Dinner! · ${t.settingsNotifEnabled}`,
         body: planningCopy[language].expiryAlert(item.name, days),
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE as const, date },
       };

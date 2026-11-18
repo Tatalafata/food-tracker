@@ -16,6 +16,7 @@ import { NotificationPrefsProvider } from '@/store/notifications';
 import { PantryProvider } from '@/store/pantry';
 import { profileCopy } from '@/store/profile-copy';
 import { RecipeBookProvider } from '@/store/recipe-book';
+import { RecipeNotesProvider } from '@/store/recipe-notes';
 import { RecipePlansProvider } from '@/store/recipe-plans';
 import { TimersProvider } from '@/store/timers';
 
@@ -64,28 +65,30 @@ export default function RootLayout() {
         <PantryProvider>
           <RecipePlansProvider>
             <DietaryPreferencesProvider>
-              <RecipeBookProvider>
-                <KitchenProvider>
-                  <TimersProvider>
-                    <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: AppColors.background, primary: AppColors.primaryDark } }}>
-                      <View style={{ flex: 1 }}>
-                        <Stack>
-                          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                          <Stack.Screen name="add-product" options={{ presentation: 'modal', headerShown: false }} />
-                          <Stack.Screen name="recipe-book" options={{ headerShown: false }} />
-                          <Stack.Screen name="shopping-list" options={{ headerShown: false }} />
-                          <Stack.Screen name="kitchen-equipment" options={{ headerShown: false }} />
-                          <Stack.Screen name="feedback" options={{ headerShown: false }} />
-                          <Stack.Screen name="profile" options={{ headerShown: false }} />
-                          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                        </Stack>
-                        <TimerDock />
-                      </View>
-                      <StatusBar style="dark" />
-                    </ThemeProvider>
-                  </TimersProvider>
-                </KitchenProvider>
-              </RecipeBookProvider>
+              <RecipeNotesProvider>
+                <RecipeBookProvider>
+                  <KitchenProvider>
+                    <TimersProvider>
+                      <ThemeProvider value={{ ...DefaultTheme, colors: { ...DefaultTheme.colors, background: AppColors.background, primary: AppColors.primaryDark } }}>
+                        <View style={{ flex: 1 }}>
+                          <Stack>
+                            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                            <Stack.Screen name="add-product" options={{ presentation: 'modal', headerShown: false }} />
+                            <Stack.Screen name="recipe-book" options={{ headerShown: false }} />
+                            <Stack.Screen name="shopping-list" options={{ headerShown: false }} />
+                            <Stack.Screen name="kitchen-equipment" options={{ headerShown: false }} />
+                            <Stack.Screen name="feedback" options={{ headerShown: false }} />
+                            <Stack.Screen name="profile" options={{ headerShown: false }} />
+                            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+                          </Stack>
+                          <TimerDock />
+                        </View>
+                        <StatusBar style="dark" />
+                      </ThemeProvider>
+                    </TimersProvider>
+                  </KitchenProvider>
+                </RecipeBookProvider>
+              </RecipeNotesProvider>
             </DietaryPreferencesProvider>
           </RecipePlansProvider>
         </PantryProvider>

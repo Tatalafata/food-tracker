@@ -13,6 +13,7 @@ import { kitchenCopy } from '@/store/kitchen-copy';
 import { getExpiryStatus, usePantry } from '@/store/pantry';
 import RecipeFacts from '@/components/RecipeFacts';
 import { TimerDock } from '@/components/CookingTimers';
+import RecipeNotes from '@/components/RecipeNotes';
 import RecipePlanner from '@/components/RecipePlanner';
 import { planningCopy } from '@/store/planning-copy';
 import { recipeIdentity, useRecipeBook } from '@/store/recipe-book';
@@ -142,6 +143,7 @@ export default function RecipeDetail({ recipe, initialServings = 1, onClose, onO
               </View>
             )}
             <RecipeFacts recipe={recipe} />
+            <RecipeNotes key={identity} target={{ recipe, servings }} />
             <View style={styles.servings}>
               <Text style={styles.servingsText} accessibilityLiveRegion="polite">{t.recipeServings(servings)}</Text>
               <TouchableOpacity style={AppStyles.iconButton} disabled={servings === 1 || addingToShopping} accessibilityRole="button" accessibilityLabel={t.recipeFewer} onPress={() => { setShoppingFeedback(null); setServings(n => n - 1); }}>
