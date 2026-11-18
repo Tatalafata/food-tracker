@@ -1,0 +1,8 @@
+[auth]
+enable_anonymous_sign_ins = true
+
+[functions.recipes]
+# The function validates each access token with Supabase Auth, including the
+# project's current signing keys.
+verify_jwt = false
+entrypoint = "./functions/recipes/index.mjs"

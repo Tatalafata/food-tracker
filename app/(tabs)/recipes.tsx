@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DietaryChoices from '@/components/DietaryChoices';
 import RecipeDetail from '@/components/RecipeDetail';
 import RecipeFacts from '@/components/RecipeFacts';
+import { hostedRecipeHeaders } from '@/lib/hosted-recipe-session';
 import { isRecipeBatch, matchesRecipePreferences, Recipe, RecipePreferences, RECIPE_COUNT } from '@/lib/recipes.mjs';
 import { equipmentPrompt } from '@/lib/kitchen-equipment';
 import { recipeAreaPrompt } from '@/lib/recipe-area';
@@ -40,11 +41,12 @@ const RECIPES_API_URL = Platform.OS !== 'web' && isLocalApi ? '' : apiUrl;
 
 async function fetchRecipes(prompt: string, preferences: RecipePreferences): Promise<Recipe[]> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 80000);
+  const timer = setTimeout(() => controller.abort(), 105000);
   try {
+    const hostedHeaders = await hostedRecipeHeaders(RECIPES_API_URL, controller.signal);
     const response = await fetch(RECIPES_API_URL.replace(/\/$/, '') + '/recipes', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...hostedHeaders },
       body: JSON.stringify({ prompt, preferences }),
       signal: controller.signal,
     }).catch(() => { throw new Error(isLocalApi ? 'offline' : 'network'); });

@@ -171,3 +171,9 @@ Ricette complete con porzioni concordate e implementate. Seguire le prossime ric
 ### Opzioni per il nome
 
 - Il controllo preliminare in Swissreg e TMview ha esaminato **Dispiva**, **Pantravia** e **Cucinido**. Nessuna corrispondenza identica trovata. Dispiva ricorda «dispensa viva» ed è la prima scelta per il Ticino. Pantravia è più internazionale. Cucinido evoca la cucina di casa, con vicinanza a CUCININO nel settore alimentare e della ristorazione. Risultati da approfondire con ricerca di similitudine professionale nei territori di lancio, in particolare per il software e i servizi online. Nessun cambio del nome della beta.
+
+### Servizio ricette fuori dal PC — 18 novembre
+
+- Collegato e riattivato il progetto Supabase **food app**. Pubblicata la funzione `recipes`, che riusa il generatore del PC. L’app può creare una sessione ospite e conserva il token di rinnovo in SecureStore. La beta usa soltanto l’URL della funzione e la chiave Publishable del progetto.
+- Il database riserva una quota prima della chiamata a OpenAI. Verificati permessi, intervallo di 30 secondi per ospite, cinque richieste per ospite e 20 globali al giorno UTC in una transazione annullata. Verificati il rifiuto senza sessione, l’accesso ospite e l’arrivo della prova a OpenAI. Verifiche locali, 13 test del servizio ed export Android e iOS riusciti.
+- Dopo l’autorizzazione della product manager, la chiave OpenAI del PC è stata salvata nel segreto dedicato `CHEFSUGGEST_OPENAI_API_KEY` di Supabase. Una sessione ospite ha ricevuto cinque ricette valide con entrambi i filtri Facili e Veloci attivi. L’aggiornamento Android con il collegamento online è in preparazione insieme ad altre modifiche richieste dalla product manager. La prova sul telefono resta da fare.

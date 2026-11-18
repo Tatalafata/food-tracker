@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRecipeServer } from './recipes.mjs';
 import { prepareRecipeOutput } from './recipe-output.mjs';
 import { isRecipe, isRecipeBatch, matchesRecipePreferences, scaledAmount, formatStep, normalizeStepShares } from '../lib/recipes.mjs';
+import { createHostedRecipeHandler } from '../supabase/functions/recipes/handler.mjs';
 
 const fixtureRecipes = Array.from({ length: 5 }, (_, index) => ({
   name: 'Pasta ' + (index + 1), description: 'Simple recipe',
@@ -14,6 +15,50 @@ const upstreamRecipes = recipes => recipes.map(recipe => ({ ...recipe, steps: re
   instruction: step.split('\n')[0],
   quantities: [...step.matchAll(/\{\{(\d+):([\d.]+)\}\}/g)].map(([, index, fraction]) => ({ ingredientIndex: Number(index), fraction: Number(fraction) })),
 })) }));
+
+test('hosted recipes require a verified guest and reserve quota before calling OpenAI', async () => {
+  const steps = [];
+  const guest = 'b8d91d5d-677c-4d99-a464-b446f288b3d6';
+  let quota = true;
+  const url = 'https://example.supabase.co';
+  const handler = createHostedRecipeHandler({
+    url, publishableKey: 'public-for-test', serviceKey: 'private-for-test', openaiKey: 'openai-for-test',
+    fetchImpl: async (target, options) => {
+      if (target === url + '/auth/v1/user') {
+        steps.push('authenticate');
+        const valid = options.headers.Authorization === 'Bearer guest-token-signed-for-test';
+        return Response.json(valid ? { id: guest } : {}, { status: valid ? 200 : 401 });
+      }
+      if (target === url + '/rest/v1/rpc/chefsuggest_reserve_recipe_request') {
+        steps.push('reserve');
+        assert.equal(options.headers.apikey, 'private-for-test');
+        assert.deepEqual(JSON.parse(options.body), { guest_id: guest });
+        return Response.json(quota);
+      }
+      assert.equal(target, 'https://api.openai.com/v1/chat/completions');
+      steps.push('generate');
+      return Response.json({ choices: [{ message: { content: JSON.stringify({ recipes: upstreamRecipes(fixtureRecipes) }) } }] });
+    },
+  });
+  const request = (token, body = { prompt: 'pasta', guest_id: 'untrusted' }) => new Request(url + '/functions/v1/recipes', {
+    method: 'POST', headers: token ? { Authorization: 'Bearer ' + token } : {}, body: JSON.stringify(body),
+  });
+  assert.equal((await handler(request())).status, 401);
+  assert.deepEqual(steps, []);
+  assert.equal((await handler(request('invalid-token-for-guest'))).status, 401);
+  assert.deepEqual(steps.splice(0), ['authenticate']);
+  const valid = 'guest-token-signed-for-test';
+  assert.equal((await handler(request(valid, { prompt: '😀'.repeat(8001) }))).status, 413);
+  assert.equal((await handler(request(valid, { prompt: '', preferences: null }))).status, 400);
+  assert.deepEqual(steps.splice(0), ['authenticate', 'authenticate']);
+  const generated = await handler(request(valid));
+  assert.equal(generated.status, 200);
+  assert.deepEqual((await generated.json()).recipes, fixtureRecipes);
+  assert.deepEqual(steps.splice(0), ['authenticate', 'reserve', 'generate']);
+  quota = false;
+  assert.equal((await handler(request(valid))).status, 429);
+  assert.deepEqual(steps, ['authenticate', 'reserve']);
+});
 
 test('a batch requires five complete recipes with different titles', () => {
   assert.ok(isRecipeBatch(fixtureRecipes));

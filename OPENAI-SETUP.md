@@ -11,7 +11,14 @@ Tariffe verificate il 17 novembre 2026: $0,20 per milione di token in ingresso e
 
 Fonti: [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna), [modelli ritirati](https://developers.openai.com/api/docs/deprecations).
 
-Questo servizio ascolta solo sul PC (127.0.0.1). Prima dell'uso su Android/iPhone o della pubblicazione serve un backend HTTPS con autenticazione degli utenti e limiti persistenti; non esporre questo server locale su Internet. Nel telefono localhost indica il telefono, non il PC. L'app riceve soltanto l'indirizzo del backend, mai la chiave OpenAI.
+Questo servizio ascolta solo sul PC (127.0.0.1). Nel telefono localhost indica il telefono, quindi la beta usa un servizio HTTPS separato. L’app riceve soltanto l’indirizzo del backend e la chiave Publishable di Supabase.
+
+## Servizio online per la beta
+
+- La funzione Supabase `recipes` riusa il generatore del PC. La chiave OpenAI per questa funzione va conservata nel deposito dei segreti Supabase come `CHEFSUGGEST_OPENAI_API_KEY`. La chiave del PC resta in `.env` come `OPENAI_API_KEY`.
+- La migrazione in `supabase/migrations` installa una quota persistente con un massimo di 20 generazioni globali al giorno UTC, cinque per ospite e un intervallo minimo di 30 secondi tra le richieste dello stesso ospite. Il servizio verifica la sessione Supabase prima di riservare una richiesta.
+- Il client usa una sessione ospite di Supabase. Il token di rinnovo è salvato in SecureStore su Android e iPhone. Imposta `EXPO_PUBLIC_RECIPES_API_URL` a `https://<progetto>.supabase.co/functions/v1` e `EXPO_PUBLIC_RECIPES_PUBLISHABLE_KEY` alla chiave `sb_publishable_…` dello stesso progetto nell’ambiente di compilazione.
+- Per aggiornare la funzione, usa `npx supabase functions deploy recipes --use-api --remote=<progetto>`. Il progetto deve consentire l’accesso anonimo. Prima di usare `supabase config push`, controlla il diff e applica solo la voce `auth.enable_anonymous_sign_ins`. Una prova reale deve ottenere cinque ricette con una sessione ospite.
 
 Tocca una proposta per aprire la ricetta completa. Le dosi partono da una persona e i pulsanti +/− permettono da 1 a 12 porzioni. Quantità numeriche e riferimenti alle dosi nei passaggi si ricalcolano sul dispositivo. Con **Aggiungi al calendario** puoi conservare la ricetta e le porzioni per un giorno a scelta e impostare un promemoria. Dal calendario riapri ingredienti e preparazione anche quando il servizio OpenAI è spento. Il promemoria viene consegnato dall'app sul telefono se le notifiche sono consentite.
 
