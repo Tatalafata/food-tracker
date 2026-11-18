@@ -1,16 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Linking, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Linking, Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { TimerDock } from '@/components/CookingTimers';
 import { AppColors, AppStyles } from '@/constants/theme';
+import inspirationText from '@/lib/data/inspiration-text.json';
 import { inspirationIndex, type OnlineInspiration } from '@/lib/inspiration-search';
 import { readWikiRecipe, wikiRecipeKey, type WikiRecipe } from '@/lib/wiki-recipe';
 import { useI18n } from '@/store/i18n';
 import { inspirationCopy } from '@/store/inspiration-copy';
 import { useTimers } from '@/store/timers';
+
+const articles: Record<string, WikiRecipe> = inspirationText as Record<string, WikiRecipe>;
 
 export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineInspiration; onClose: () => void }) {
   const { language, t } = useI18n();
@@ -20,8 +23,9 @@ export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineIn
   const [retry, setRetry] = useState(0);
   const [result, setResult] = useState<{ url: string; article: WikiRecipe | null } | null>(null);
   const current = trail[trail.length - 1];
+  const included = articles[wikiRecipeKey(current.url) ?? ''];
   const resolved = result?.url === current.url ? result : null;
-  const article = resolved?.article;
+  const article = included ?? resolved?.article;
   const related = useMemo(() => new Map(inspirationIndex(language).flatMap(recipe => {
     const key = recipe.url && wikiRecipeKey(recipe.url);
     return key && recipe.url ? [[key, recipe] as const] : [];
@@ -33,16 +37,17 @@ export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineIn
   }, [setDockInDetail]);
 
   useEffect(() => {
+    if (included) return;
     const controller = new AbortController();
     let active = true;
     const timeout = setTimeout(() => controller.abort(), 12000);
-    readWikiRecipe(current.url, controller.signal).then(data => {
+    readWikiRecipe(current.url, controller.signal, Platform.OS === 'web').then(data => {
       if (active) setResult({ url: current.url, article: data });
     }).catch(() => {
       if (active) setResult({ url: current.url, article: null });
     }).finally(() => clearTimeout(timeout));
     return () => { active = false; clearTimeout(timeout); controller.abort(); };
-  }, [current.url, retry]);
+  }, [current.url, included, retry]);
 
   function previous() {
     setResult(null);
@@ -68,7 +73,7 @@ export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineIn
             <Ionicons name="close" size={22} color={AppColors.avocadoText} />
           </TouchableOpacity>
         </View>
-        {!resolved ? <ActivityIndicator style={styles.waiting} size="large" color={AppColors.primaryDark} /> : article ? (
+        {article ? (
           <FlatList
             key={current.url}
             data={article.blocks}
@@ -119,7 +124,7 @@ export default function OnlineRecipeDetail({ entry, onClose }: { entry: OnlineIn
               </View>
             }
           />
-        ) : (
+        ) : !resolved ? <ActivityIndicator style={styles.waiting} size="large" color={AppColors.primaryDark} /> : (
           <View style={styles.error}>
             <Text accessibilityRole="alert" style={styles.paragraph}>{copy.readError}</Text>
             <TouchableOpacity accessibilityRole="button" style={AppStyles.button}

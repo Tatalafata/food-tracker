@@ -16,9 +16,18 @@ interface KitchenData {
   shopping: ShoppingItem[];
   equipment: EquipmentId[];
   area: string;
+  firstName: string;
+  lastName: string;
 }
 
-const empty: KitchenData = { shopping: [], equipment: [], area: '' };
+export type ProfileDetails = Pick<KitchenData, 'area' | 'firstName' | 'lastName'>;
+export const profileNameMaxLength = 64;
+
+export function cleanProfileName(value: unknown) {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, profileNameMaxLength) : '';
+}
+
+const empty: KitchenData = { shopping: [], equipment: [], area: '', firstName: '', lastName: '' };
 
 interface KitchenContext extends KitchenData {
   loading: boolean;
@@ -27,7 +36,7 @@ interface KitchenContext extends KitchenData {
   toggleBought: (id: string) => Promise<void>;
   removeShoppingItem: (id: string) => Promise<void>;
   toggleEquipment: (id: EquipmentId) => Promise<void>;
-  setArea: (value: string) => Promise<void>;
+  setProfileDetails: (details: ProfileDetails) => Promise<void>;
 }
 
 const Kitchen = createContext<KitchenContext | null>(null);
@@ -52,6 +61,8 @@ export function KitchenProvider({ children }: { children: ReactNode }) {
         shopping: saved.shopping,
         equipment: equipmentIds.filter(id => saved.equipment.includes(id)),
         area: cleanRecipeArea(saved.area),
+        firstName: cleanProfileName(saved.firstName),
+        lastName: cleanProfileName(saved.lastName),
       };
       setData(latest.current);
     }).catch(() => setLoadError(true)).finally(() => setLoading(false));
@@ -97,7 +108,12 @@ export function KitchenProvider({ children }: { children: ReactNode }) {
   return (
     <Kitchen.Provider value={{
       ...data, loading, loadError, addToShopping,
-      setArea: value => save(current => [{ ...current, area: cleanRecipeArea(value) }, undefined]),
+      setProfileDetails: details => save(current => [{
+        ...current,
+        area: cleanRecipeArea(details.area),
+        firstName: cleanProfileName(details.firstName),
+        lastName: cleanProfileName(details.lastName),
+      }, undefined]),
       toggleBought: id => save(current => [{
         ...current, shopping: current.shopping.map(item => item.id === id ? { ...item, bought: !item.bought } : item),
       }, undefined]),

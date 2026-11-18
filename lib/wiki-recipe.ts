@@ -104,7 +104,7 @@ export function extractWikiBlocks(html: string): WikiBlock[] {
   return blocks;
 }
 
-export async function readWikiRecipe(url: string, signal: AbortSignal): Promise<WikiRecipe> {
+export async function readWikiRecipe(url: string, signal: AbortSignal, browser = false): Promise<WikiRecipe> {
   const source = wikiRecipeSource(url);
   if (!source) throw new Error('Invalid recipe source');
   const cached = cache.get(url);
@@ -112,9 +112,10 @@ export async function readWikiRecipe(url: string, signal: AbortSignal): Promise<
   const query = '/w/api.php?action=parse&format=json&formatversion=2&prop=text%7Crevid'
     + '&origin=*&redirects=1&disableeditsection=1&disabletoc=1&page=' + encodeURIComponent(source.page);
   const response = await fetch(source.origin + query, {
-    signal, headers: { 'Api-User-Agent': 'ChefSuggest/1.0 (https://github.com/Tatalafata/food-tracker)' },
+    signal,
+    headers: { [browser ? 'Api-User-Agent' : 'User-Agent']: 'ChefSuggest/1.0 (https://github.com/Tatalafata/food-tracker)' },
   });
-  if (!response.ok) throw new Error('Recipe unavailable');
+  if (!response.ok) throw new Error('Recipe unavailable (HTTP ' + response.status + ')');
   const payload = await response.json();
   const html = payload.parse?.text;
   if (typeof html !== 'string' || html.length > 600000) throw new Error('Invalid recipe response');

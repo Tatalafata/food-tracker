@@ -1,6 +1,6 @@
 # Promemoria ChefSuggest
 
-Aggiornato il 17 novembre 2026. Questo file permette alle nuove chat di riprendere il lavoro senza dipendere dalla memoria della conversazione. Non inserire credenziali o dati personali.
+Aggiornato il 18 novembre 2026. Questo file permette alle nuove chat di riprendere il lavoro senza dipendere dalla memoria della conversazione. Non inserire credenziali o dati personali.
 
 ## Decisioni del proprietario
 
@@ -159,3 +159,15 @@ Ricette complete con porzioni concordate e implementate. Seguire le prossime ric
 - Le schede di Ispirazione aprono il dettaglio nell’app. Per le schede del catalogo Wikibooks, il lettore carica il testo online nella lingua della fonte e mostra ingredienti, passaggi e attribuzione. Chiudendo il dettaglio si ritrovano ricerca e filtri. In caso di problemi di connessione si può riprovare.
 - Al primo avvio il tutorial di quattro schermate precede la scelta degli ingredienti della dispensa. La croce mostra dove rivederlo. **Impostazioni → Tutorial** lo riapre anche per chi aveva già configurato la dispensa.
 - Browser a 320 × 700: verificati il primo avvio con tutorial completato e saltato, il passaggio alla dispensa, la persistenza dopo la ricarica e la riapertura dalle Impostazioni in italiano. Tiramisù e Apple Pie I hanno mostrato ingredienti e preparazione nell’app. La ricerca è rimasta disponibile alla chiusura del dettaglio. `npm run check` ed export Android e iOS riusciti. La navigazione e la resa su telefoni reali restano da verificare.
+
+### Beta Android, catalogo offline, timer e profilo — 18 novembre
+
+- Il primo APK è stato installato dalla product manager e ha evidenziato che la lettura di Ispirazione poteva essere bloccata da Wikibooks. Verificato che le richieste con il solo header del browser potevano essere rifiutate, mentre con un User-Agent appropriato funzionavano. I 1.276 testi Wikibooks dell’indice sono ora inclusi nell’app, con collegamento alla revisione originaria. Rimangono i dettagli delle ricette curate e il caricamento online per eventuali aggiunte prive di copia locale. Le foto di catalogo restano da scaricare.
+- Un timer può partire con la sola durata e riceve un nome predefinito nella lingua dell’app. Da **Impostazioni → Profilo e zona** si possono salvare nome, cognome e zona facoltativi, anche come ospite. Nome e cognome entrano nella copia online su richiesta e non vengono inviati al servizio ricette. Il backup accetta ancora copie precedenti senza questi campi.
+- Nel browser verificati due timer simultanei con e senza nome, il salvataggio e la rimozione del cognome, la persistenza di nome e zona dopo la ricarica e la resa a 360 punti. Verificate le sezioni di Apple Pie I e Tiramisù e il mantenimento della ricerca. Controllata la presenza di tutti i testi pubblicati.
+- Il motore locale ha prodotto cinque ricette in una prova reale su ingredienti dimostrativi. L’APK continua a richiedere un servizio HTTPS per generare ricette fuori dal computer. Anche la copia online richiede l’attivazione del progetto Supabase e della consegna dei codici email. Nessuna chiave privata va inclusa negli APK.
+- La versione Android di prova è compilata da una copia separata dei sorgenti sotto `tatalafata/chefsuggest` su Expo. Il repository conserva il collegamento Expo precedente. Nelle versioni di prova riusare il progetto, la firma e l’identificativo Android già usati per installare l’aggiornamento sopra la prima beta.
+
+### Opzioni per il nome
+
+- Il controllo preliminare in Swissreg e TMview ha esaminato **Dispiva**, **Pantravia** e **Cucinido**. Nessuna corrispondenza identica trovata. Dispiva ricorda «dispensa viva» ed è la prima scelta per il Ticino. Pantravia è più internazionale. Cucinido evoca la cucina di casa, con vicinanza a CUCININO nel settore alimentare e della ristorazione. Risultati da approfondire con ricerca di similitudine professionale nei territori di lancio, in particolare per il software e i servizi online. Nessun cambio del nome della beta.

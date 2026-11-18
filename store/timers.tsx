@@ -105,7 +105,7 @@ export function TimersProvider({ children }: { children: ReactNode }) {
     hidden: false,
     timers: [...value.timers, {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      name: name.trim(), duration, remaining: duration, endsAt: Date.now() + duration,
+      name: name.trim() || timerCopy[language].defaultName, duration, remaining: duration, endsAt: Date.now() + duration,
     }],
   }));
 

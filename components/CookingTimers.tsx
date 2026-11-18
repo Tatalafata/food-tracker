@@ -20,7 +20,7 @@ export function HomeTimers() {
   const [minutes, setMinutes] = useState('');
   const [seconds, setSeconds] = useState('');
   const duration = (Number(minutes) * 60 + Number(seconds)) * 1000;
-  const canStart = ready && !saving && !!name.trim() && duration > 0;
+  const canStart = ready && !saving && duration > 0;
 
   async function start() {
     if (!canStart) return;

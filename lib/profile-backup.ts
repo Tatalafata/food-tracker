@@ -39,6 +39,8 @@ function validRecord(field: keyof typeof stores, stored: unknown) {
         && (item.expiryDate === undefined || typeof item.expiryDate === 'string'));
     case 'kitchen':
       return object(data) && Array.isArray(data.equipment) && data.equipment.every(item => typeof item === 'string')
+        && (data.firstName === undefined || typeof data.firstName === 'string')
+        && (data.lastName === undefined || typeof data.lastName === 'string')
         && Array.isArray(data.shopping) && data.shopping.every(item => identified(item)
           && typeof item.name === 'string' && typeof item.quantity === 'string' && typeof item.bought === 'boolean');
     case 'dietary':
