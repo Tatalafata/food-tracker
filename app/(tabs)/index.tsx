@@ -63,7 +63,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <>
-            <ScreenHeader title="Make It Dinner!" subtitle={t.homeSubtitle(items.length)} icon="leaf-outline" />
+            <ScreenHeader title="Make It Dinner!" subtitle={t.homeSubtitle(items.length)} logo={require('@/assets/images/icon.png')} />
             <View style={styles.shopping}><KitchenLink kind="shopping" /></View>
             <HomeTimers />
             <View style={styles.overview}>
@@ -81,7 +81,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.actions}>
               <TouchableOpacity style={styles.addAction} onPress={() => router.push('/add-product')} activeOpacity={0.75} accessibilityRole="button">
-                <Ionicons name="add" size={21} color={AppColors.avocadoText} />
+                <Ionicons name="add" size={21} color={AppColors.actionText} />
                 <Text style={styles.addActionText}>{t.addProductTitle}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.scanAction} onPress={() => router.push('/scanner')} activeOpacity={0.75} accessibilityRole="button">
